@@ -11,8 +11,8 @@
     webxr="requiredFeatures: dom-overlay; overlayElement: #overlay;"
   >
 
-      <changing-color-box :scale="scale" color="#ff0000" :position="`-3 0 -6`"/>
-      <changing-color-box :scale="scale" color="#00ff00" :position="`3 0 -6`"/>
+      <changing-color-box :scale="scale" color="#ff0000" position="-3 0 -6"/>
+      <changing-color-box :scale="scale" color="#00ff00" position="3 0 -6"/>
 
       <a-entity
         id="camera-rig"
