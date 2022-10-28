@@ -1,6 +1,5 @@
 <script setup>
-  import './aframe/emit-when-near.js';
-  import './aframe/event-set.js';
+  import changingColorBox from './components/changing-color-box.vue';
   import { ref } from 'vue';
 
   const scale = ref(1);
@@ -12,14 +11,8 @@
     webxr="requiredFeatures: dom-overlay; overlayElement: #overlay;"
   >
 
-      <a-box
-        position="0 0 -6"
-        :scale="`${scale} ${scale} ${scale}`"
-        material="color: red"
-        emit-when-near="event: change-color; eventFar: reset-color; distance: 3"
-        event-set__near="event: change-color; attribute: material.color; value: blue;"
-        event-set__far="event: reset-color; attribute: material.color; value: red;"
-      ></a-box>
+      <changing-color-box :scale="scale" color="#ff0000" :position="`-3 0 -6`"/>
+      <changing-color-box :scale="scale" color="#00ff00" :position="`3 0 -6`"/>
 
       <a-entity
         id="camera-rig"
@@ -40,7 +33,7 @@
   <div id="overlay">
     <dl id="debug">
       <dt>scale: {{ scale }}</dt>
-      <input v-model="scale" type="range" min="0.1" max="5" step="0.1">
+      <input v-model.number="scale" type="range" min="0.1" max="5" step="0.1">
     </dl>
   </div>
 
