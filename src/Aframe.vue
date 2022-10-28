@@ -6,10 +6,7 @@
 </script>
 
 <template>
-  <a-scene
-    renderer="colorManagement: true"
-    webxr="requiredFeatures: dom-overlay; overlayElement: #overlay;"
-  >
+  <a-scene renderer="colorManagement: true">
 
       <changing-color-box :scale="scale" color="#ff0000" position="-3 0 -6"/>
       <changing-color-box :scale="scale" color="#00ff00" position="3 0 -6"/>
