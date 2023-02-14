@@ -1,6 +1,6 @@
 # a-frame-vite-vue-boilerplate
 
-##Minimalist boilerplate for A-Frame 1.4, Vue 3.2 et Vite 4.1
+## Minimalist boilerplate for A-Frame 1.4, Vue 3.2 et Vite 4.1
 
 Included in the boilerplate:
 
