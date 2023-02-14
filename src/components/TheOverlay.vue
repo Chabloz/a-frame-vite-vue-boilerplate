@@ -9,14 +9,13 @@
   });
 
   const emit = defineEmits([
-    'update:modelValue'
+    'update:modelValue',
   ]);
 
   const value = computed({
     get: () => props.modelValue,
     set: val => emit('update:modelValue', val),
   });
-
 </script>
 
 <template>
@@ -29,6 +28,9 @@
 </template>
 
 <style scoped>
+  #overlay { z-index: 1000; }
+  :xr-overlay { z-index: inherit; }  /* in AR z-index is not supported for AR dom overlay */
+
   #debug {
     position: absolute;
     left: 20px;

@@ -5,18 +5,17 @@
   const props = defineProps({
     scale: {
       type: Number,
-      default: 1
+      default: 1,
     },
     color: {
       type: String,
-      default: '#ff0000'
+      default: '#ff0000',
     },
     position: {
       type: String,
-      default: '0 0 -6'
-    }
+      default: '0 0 -6',
+    },
   });
-
 </script>
 
 <template>
@@ -29,7 +28,3 @@
     :event-set__far="`event: reset-color; attribute: material.color; value: ${color};`"
   ></a-box>
 </template>
-
-<style scoped>
-
-</style>
