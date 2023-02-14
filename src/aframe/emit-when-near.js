@@ -1,6 +1,6 @@
 AFRAME.registerComponent('emit-when-near', {
   schema: {
-    target: {type: 'selector', default: '#head'},
+    target: {type: 'selector', default: '[camera]'},
     distance: {type: 'number', default: 1},
     event: {type: 'string', default: 'click'},
     eventFar: {type: 'string', default: 'unclick'},
@@ -9,13 +9,13 @@ AFRAME.registerComponent('emit-when-near', {
   init: function () {
     this.tick = AFRAME.utils.throttleTick(this.checkDist, this.data.throttle, this);
     this.emiting = false;
+    this.myPos = new THREE.Vector3(0, 0, 0);
+    this.targetPos = new THREE.Vector3(0, 0, 0);
   },
   checkDist: function () {
-    let myPos = new THREE.Vector3(0, 0, 0);
-    let targetPos = new THREE.Vector3(0, 0, 0);
-    this.el.object3D.getWorldPosition(myPos);
-    this.data.target.object3D.getWorldPosition(targetPos);
-    const distanceTo = myPos.distanceTo(targetPos);
+    this.el.object3D.getWorldPosition(this.myPos);
+    this.data.target.object3D.getWorldPosition(this.targetPos);
+    const distanceTo = this.myPos.distanceTo(this.targetPos);
     if (distanceTo <= this.data.distance) {
       if (this.emiting) return;
       this.emiting = true;

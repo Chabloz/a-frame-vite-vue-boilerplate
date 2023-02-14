@@ -1,5 +1,12 @@
 # a-frame-vite-vue-boilerplate
-Minimalist boilerplate for A-Frame 1.4, Vue 3.2 et Vite 4.1
+
+##Minimalist boilerplate for A-Frame 1.4, Vue 3.2 et Vite 4.1
+
+Included in the boilerplate:
+
+- aframe-extras controls: https://github.com/c-frame/aframe-extras/tree/master/src/controls (MIT License)
+- aframe-blink-controls: https://github.com/jure/aframe-blink-controls (MIT License)
+- simple-navmesh-constraint: https://github.com/AdaRoseCannon/aframe-xr-boilerplate (MIT Licence)
 
 Create a folder for your project and :
 

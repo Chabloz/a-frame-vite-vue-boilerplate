@@ -11,16 +11,11 @@
       type: String,
       default: '#ff0000',
     },
-    position: {
-      type: String,
-      default: '0 0 -6',
-    },
   });
 </script>
 
 <template>
   <a-box
-    :position="position"
     :scale="`${scale} ${scale} ${scale}`"
     :material="`color: ${color}`"
     emit-when-near="event: change-color; eventFar: reset-color; distance: 4"

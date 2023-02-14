@@ -1,6 +1,7 @@
 <script setup>
   import BoxColorChanging from './BoxColorChanging.vue';
   import TheCameraRig from './TheCameraRig.vue';
+  import TheNavMesh from './TheNavMesh.vue';
 
   const props = defineProps({
     scale: {
@@ -13,6 +14,7 @@
 
 <template>
   <a-scene
+    background="color: black;"
     renderer="colorManagement: true;"
     webxr="
       requiredFeatures: local-floor;
@@ -22,8 +24,10 @@
     "
   >
 
-    <BoxColorChanging :scale="scale" color="#ff0000" position="-3 0 -6"/>
-    <BoxColorChanging :scale="scale" color="#00ff00" position="3 0 -6"/>
+    <BoxColorChanging :scale="scale" color="tomato" position="-3 0.5 -7" />
+    <BoxColorChanging :scale="scale" color="olive" position="3 0.5 -7" />
+
+    <TheNavMesh />
 
     <TheCameraRig />
 
