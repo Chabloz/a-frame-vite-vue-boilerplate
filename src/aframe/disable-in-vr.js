@@ -6,6 +6,7 @@ AFRAME.registerComponent('disable-in-vr', {
     component: {type: 'string', default: ''},
     // Set this to true if you want to disable the component in flat 3d (desktop fullscreen mode of A-Frame)
     disableInFlat3d: {type: 'boolean', default: false},
+    disableInAR: {type: 'boolean', default: true},
   },
 
   init: function () {
@@ -13,7 +14,7 @@ AFRAME.registerComponent('disable-in-vr', {
     this.enable = this.enable.bind(this);
     this.setLastState();
 
-    if (this.el.sceneEl.is('vr-mode') || this.el.sceneEl.is('ar-mode')) {
+    if (this.el.sceneEl.is('vr-mode') || (this.data.disableInAR && this.el.sceneEl.is('ar-mode'))) {
       this.disable();
     } else {
       this.enable();
@@ -39,9 +40,10 @@ AFRAME.registerComponent('disable-in-vr', {
 
   disable: function () {
     if (!this.data.disableInFlat3d) {
-      const isTrueVrOrAr = AFRAME.utils.device.checkHeadsetConnected() || this.el.sceneEl.is('ar-mode');
+      const isTrueVrOrAr = AFRAME.utils.device.checkHeadsetConnected() || (this.data.disableInAR && this.el.sceneEl.is('ar-mode'));
       if (!isTrueVrOrAr) return;
     }
+    if (!this.data.disableInAR && this.el.sceneEl.is('ar-mode')) return;
     this.setLastState();
     this.el.setAttribute(this.data.component, 'enabled', false);
   },

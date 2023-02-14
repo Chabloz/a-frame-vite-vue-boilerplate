@@ -1,5 +1,6 @@
 <script setup>
   import '../aframe/disable-in-vr';
+  import '../aframe/hide-in-vr';
   import '../aframe/simple-navmesh-constraint';
 </script>
 
@@ -17,7 +18,17 @@
         simple-navmesh-constraint="navmesh: [data-role='nav-mesh']; height: 1.6;"
         camera
         position="0 1.6 0"
-      ></a-entity>
+      >
+        <a-entity
+          geometry="primitive: circle; radius: 0.0003;"
+          material="shader: flat; color: white;"
+          cursor
+          raycaster="far: 1.5; objects: [clickable]; showLine: false;"
+          position="0 0 -0.1"
+          disable-in-vr="component: raycaster; disableInAR: false;"
+          hide-in-vr="hideInAR: false"
+        ></a-entity>
+      </a-entity>
 
       <a-entity
         id="hand-left"
@@ -33,6 +44,8 @@
       <a-entity
         id="hand-right"
         hand-controls="hand: right"
+        laser-controls="hand: right"
+        raycaster="far: 1.5; objects: [clickable]; showLine: true;"
       ></a-entity>
 
   </a-entity>

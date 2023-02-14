@@ -8,16 +8,16 @@ AFRAME.registerComponent('event-set', {
   },
 
   init: function() {
-    this._onEvent = this._onEvent.bind(this);
-    this.el.addEventListener(this.data.event, this._onEvent);
+    this.onEvent = this.onEvent.bind(this);
+    this.el.addEventListener(this.data.event, this.onEvent);
   },
 
   remove: function() {
-    this.el.removeEventListener(this.data.event, this._onEvent);
+    this.el.removeEventListener(this.data.event, this.onEvent);
   },
 
-  _onEvent: function(evt) {
+  onEvent: function(evt) {
     AFRAME.utils.entity.setComponentProperty(this.el, this.data.attribute, this.data.value);
-  }
+  },
 
 });

@@ -6,12 +6,14 @@ AFRAME.registerComponent('emit-when-near', {
     eventFar: {type: 'string', default: 'unclick'},
     throttle: {type: 'number', default: 100},
   },
+
   init: function () {
     this.tick = AFRAME.utils.throttleTick(this.checkDist, this.data.throttle, this);
     this.emiting = false;
     this.myPos = new THREE.Vector3(0, 0, 0);
     this.targetPos = new THREE.Vector3(0, 0, 0);
   },
+
   checkDist: function () {
     this.el.object3D.getWorldPosition(this.myPos);
     this.data.target.object3D.getWorldPosition(this.targetPos);
@@ -27,5 +29,6 @@ AFRAME.registerComponent('emit-when-near', {
       this.data.target.emit(this.data.eventFar, {collidingEntity: this.el}, false);
       this.emiting = false;
     }
-  }
+  },
+
 });
