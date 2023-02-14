@@ -1,5 +1,5 @@
 # a-frame-vite-vue-boilerplate
-Minimalist boilerplate for A-Frame 1.3.0, Vue 3.2 et Vite 3.2
+Minimalist boilerplate for A-Frame 1.4, Vue 3.2 et Vite 4.1
 
 Create a folder for your project and :
 
