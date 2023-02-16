@@ -15,7 +15,7 @@
   });
 
   function randomHsl() {
-    return 'hsla(' + (Math.random() * 360) + ', 100%, 50%, 1)';
+    return `hsla(${Math.random() * 360}, 100%, 50%, 1)`;
   }
 
   const randomColor = ref('pink');
