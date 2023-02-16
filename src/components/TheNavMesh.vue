@@ -27,4 +27,6 @@
     material="color: #3BA874"
     data-role="nav-mesh"
   ></a-entity>
+
+
 </template>

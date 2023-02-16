@@ -31,5 +31,6 @@
     :event-set__click="`event: click; attribute: material.color; value: ${randomColor};`"
     :event-set__far="`event: reset-color; attribute: material.color; value: ${color};`"
     @click="randomColor = randomHsl()"
+    @change-color="color = randomHsl()"
   ></a-box>
 </template>

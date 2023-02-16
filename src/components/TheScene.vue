@@ -3,6 +3,7 @@
   import TheCameraRig from './TheCameraRig.vue';
   import TheNavMesh from './TheNavMesh.vue';
   import '../aframe/clickable';
+  import '../aframe/listen-to';
 
   const props = defineProps({
     scale: {
@@ -26,22 +27,20 @@
   >
 
     <BoxColorChanging
+      id="box-left"
       :scale="scale"
       color="tomato"
       position="-3 0.5 -7"
       clickable
+      listen-to="target: #box-right; emit: change-color;"
     />
     <BoxColorChanging
+      id="box-right"
       :scale="scale"
       color="gold"
       position="3 0.5 -7"
       clickable
-    />
-    <BoxColorChanging
-      :scale="scale"
-      color="pink"
-      position="0 0.5 -1"
-      clickable
+      listen-to="target: #box-left; emit: change-color;"
     />
 
     <TheNavMesh />
