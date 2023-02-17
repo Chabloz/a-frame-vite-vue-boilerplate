@@ -15,28 +15,33 @@
       <p v-if="!loaded">loading...</p>
       <button v-if="loaded" @click="showOnboarding = false">Enter scene</button>
       <div class="licences">
-        <p>Included in the boilerplate:</p>
         <dl>
-          <dt>aframe-extras controls and animation-mixer</dt>
-          <dd>
-            <a href="https://github.com/c-frame/aframe-extras" target="_blank">https://github.com/c-frame/aframe-extras</a>
-             - <a href="https://github.com/c-frame/aframe-extras/blob/master/LICENSE" target="_blank">MIT License</a>
+          <dt>
+            <i>Included</i>
+          </dt>
+          <dt>
+            <a href="https://github.com/c-frame/aframe-extras" target="_blank">aframe-extras controls and animation-mixer</a>
+          </dt><dd>
+            <a href="https://github.com/c-frame/aframe-extras/blob/master/LICENSE" target="_blank">MIT License</a>
           </dd>
-          <dt>aframe-blink-controls</dt>
-          <dd>
+
+          <dt>
             <a href="https://github.com/jure/aframe-blink-controls/" target="_blank">aframe-blink-controls</a>
-             - <a href="https://github.com/jure/aframe-blink-controls/blob/main/LICENSE" target="_blank">MIT License</a>
+          </dt><dd>
+            <a href="https://github.com/jure/aframe-blink-controls/blob/main/LICENSE" target="_blank">MIT License</a>
           </dd>
-          <dt>simple-navmesh-constraint</dt>
-          <dd>
-            A component from <a href=" https://github.com/AdaRoseCannon/aframe-xr-boilerplate" target="_blank">aframe-xr-boilerplate</a> By Ada Rose Cannon
-            under MIT License
+
+          <dt>
+            <a href=" https://github.com/AdaRoseCannon/aframe-xr-boilerplate" target="_blank">simple-navmesh-constraint</a>
+          </dt><dd>
+            By Ada Rose Cannon under MIT License
           </dd>
-          <dt>3D Room model: VR exhibition gallery baked</dt>
-          <dd>
+
+          <dt>
             <a href="https://sketchfab.com/3d-models/vr-exhibition-gallery-baked-ee6f3b0d9db14b62a1b3aeef04315313" target="_blank">VR exhibition gallery baked</a>
+          </dt><dd>
             by <a href="https://sketchfab.com/ida61xq" target="_blank">ChristyHsu</a>
-            is licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>
+            under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>
           </dd>
         </dl>
       </div>
@@ -45,28 +50,38 @@
 </template>
 
 <style scoped>
+  h1 { font-size: 1.5rem }
   a {
-    color: white;
+    color: #eee;
+    text-decoration: none;
   }
   .licences {
     margin: 2rem 0;
     font-size: 1rem;
+    text-align: left;
   }
   .licences dt {
-    padding-top: 1rem;
+    padding-top: 0.75rem;
+    font-size: 0.9rem;
     font-weight: bold;
   }
+  .licences dd {
+    margin-left: 0;
+    font-size: 0.8rem;
+  }
+
   #onboarding {
     position: absolute;
     top: 0;
     left: 0;
     background-color: #333;
     color: #ccc;
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     padding: 1rem;
     font-family: monospace;
     z-index: 10000;
+    overflow: auto;
   }
   #onboarding > * {
     margin: 0 auto;

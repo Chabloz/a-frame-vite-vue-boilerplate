@@ -1,6 +1,8 @@
 <script setup>
   import '../aframe/emit-when-near';
   import '../aframe/event-set';
+  import '../aframe/clickable';
+
   import { randomHsl } from '../utils/color.js';
   import { ref } from 'vue';
 
