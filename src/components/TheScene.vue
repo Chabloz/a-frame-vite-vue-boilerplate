@@ -44,13 +44,13 @@
       v-if="allAssetsLoaded"
       gltf-model="#room"
       rotation="0 90 0"
-      position="0 0 10"
-      scale="0.5 0.5 0.5"
+      position="0 0 5"
+      scale="0.25 .35 0.25"
     ></a-entity>
     <a-entity
-      geometry="primitive: plane; height: 22; width: 22"
-      position="0 0.1 -16.5"
-      life-like-automaton="resolution: 768;"
+      geometry="primitive: plane; height: 11; width:11"
+      position="0 2.5 -10"
+      life-like-automaton="resolution: 512; genPerSec: 25;"
     ></a-entity>
 
     <BoxColorChanging
