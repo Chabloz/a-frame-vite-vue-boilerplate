@@ -19,7 +19,7 @@
 </script>
 
 <template>
-  <div id="overlay">
+  <div>
     <dl id="debug">
       <dt>scale: {{ value }}</dt>
       <input v-model.number="value" type="range" min="0.1" max="5" step="0.1">

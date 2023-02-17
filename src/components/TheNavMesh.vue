@@ -1,32 +1,10 @@
-<script setup>
-  import '../aframe/life-like-automaton';
-</script>
-
-
 <template>
   <a-entity
-    geometry="primitive: plane; height: 7; width: 7"
-    position="0 0 .5"
+    geometry="primitive: plane; height: 24; width: 21"
+    position="0 0.1 1"
     rotation="-90 0 0"
     data-role="nav-mesh"
-    life-like-automaton
-  ></a-entity>
-
-  <a-entity
-    geometry="primitive: plane; height: 5d; width: 2"
-    position="2.5 0 -5.5"
-    rotation="-90 0 0"
     material="color: #3BA874"
-    data-role="nav-mesh"
+    visible="false"
   ></a-entity>
-
-  <a-entity
-    geometry="primitive: plane; height: 5; width: 2"
-    position="-2.5 0 -5.5"
-    rotation="-90 0 0"
-    material="color: #3BA874"
-    data-role="nav-mesh"
-  ></a-entity>
-
-
 </template>
