@@ -69,13 +69,13 @@
     z-index: 10000;
   }
   #onboarding > * {
-	  margin: 0 auto;
-	  max-width: 50rem;
-	  width: calc(100vw - 10rem);
-	  text-align: center;
-	  border-radius: 0.3rem;
-	  padding: 1rem;
-	  font-size: 1.3rem;
+    margin: 0 auto;
+    max-width: 50rem;
+    width: calc(100vw - 10rem);
+    text-align: center;
+    border-radius: 0.3rem;
+    padding: 1rem;
+    font-size: 1.3rem;
   }
   #onboarding button {
     font-size: 1.3rem;
