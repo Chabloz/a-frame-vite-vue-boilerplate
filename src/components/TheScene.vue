@@ -37,7 +37,7 @@
         Model author: https://sketchfab.com/ida61xq (ChristyHsu)
         Model license: CC BY 4.0 ( https://creativecommons.org/licenses/by/4.0/ )
       -->
-      <a-asset-item  id="room" src="/assets/room.glb"></a-asset-item>
+      <a-asset-item  id="room" src="assets/room.glb"></a-asset-item>
     </a-assets>
 
     <a-entity
