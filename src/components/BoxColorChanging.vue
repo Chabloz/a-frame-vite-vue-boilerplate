@@ -12,7 +12,6 @@
   });
 
   const randomColor = ref(randomHsl());
-
 </script>
 
 <template>
@@ -20,7 +19,7 @@
     :scale="`${scale} ${scale} ${scale}`"
     :material="`color: ${color}`"
     clickable
-    emit-when-near="event: change-color; eventFar: reset-color; distance: 5"
+    emit-when-near="event: change-color; eventFar: reset-color; distance: 2.5"
     event-set__near="event: change-color; attribute: material.color; value: blue;"
     :event-set__click="`event: click; attribute: material.color; value: ${randomColor};`"
     :event-set__far="`event: reset-color; attribute: material.color; value: ${color};`"

@@ -7,7 +7,7 @@ Included in the boilerplate:
 - aframe-extras controls and animation-mixer: https://github.com/c-frame/aframe-extras  (MIT License)
 - aframe-blink-controls: https://github.com/jure/aframe-blink-controls (MIT License)
 - simple-navmesh-constraint: https://github.com/AdaRoseCannon/aframe-xr-boilerplate (MIT Licence)
-- 3D Room model: [VR exhibition gallery baked](https://sketchfab.com/3d-models/vr-exhibition-gallery-baked-ee6f3b0d9db14b62a1b3aeef04315313) by [ChristyHsu](https://sketchfab.com/ida61xq) is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- 3D Room model: [VR Gallery](https://sketchfab.com/3d-models/vr-gallery-1ac32ed62fdf424498acc146fad31f7e) by [Maxim Mavrichev](https://sketchfab.com/mvrc.art) is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 Create a folder for your project and :
 

@@ -6,6 +6,13 @@
   });
 
   const showOnboarding = ref(true);
+
+  function enterScene() {
+    showOnboarding.value = false;
+    if (AFRAME.utils.device.checkHeadsetConnected()) {
+      document.querySelector('a-scene').enterVR();
+    }
+  }
 </script>
 
 <template>
@@ -13,7 +20,7 @@
     <div>
       <h1>A-Frame + Vite + Vue Boilerplate</h1>
       <p v-if="!loaded">loading...</p>
-      <button v-if="loaded" @click="showOnboarding = false">Enter scene</button>
+      <button v-if="loaded" @click="enterScene()">Enter scene</button>
       <div class="licences">
         <dl>
           <dt>
