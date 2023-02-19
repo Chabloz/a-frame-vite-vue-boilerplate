@@ -2,7 +2,6 @@
   import '../aframe/disable-in-vr';
   import '../aframe/hide-in-vr';
   import '../aframe/simple-navmesh-constraint';
-  import '../aframe/reset-on-vr';
   import '../aframe/blink-controls';
 </script>
 
