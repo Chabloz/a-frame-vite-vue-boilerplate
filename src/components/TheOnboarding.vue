@@ -9,7 +9,7 @@
 
   function enterScene() {
     showOnboarding.value = false;
-    if (AFRAME.utils.device.checkHeadsetConnected()) {
+    if (AFRAME.utils.device.checkHeadsetConnected() && !AFRAME.utils.device.isMobile()) {
       document.querySelector('a-scene').enterVR();
     }
   }
@@ -45,9 +45,9 @@
           </dd>
 
           <dt>
-            <a href="https://sketchfab.com/3d-models/vr-exhibition-gallery-baked-ee6f3b0d9db14b62a1b3aeef04315313" target="_blank">VR exhibition gallery baked</a>
+            <a href="https://sketchfab.com/3d-models/vr-gallery-1ac32ed62fdf424498acc146fad31f7e" target="_blank">VR Gallery</a>
           </dt><dd>
-            by <a href="https://sketchfab.com/ida61xq" target="_blank">ChristyHsu</a>
+            by <a href="https://sketchfab.com/mvrc.art" target="_blank">Maxim Mavrichev</a>
             under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>
           </dd>
         </dl>
