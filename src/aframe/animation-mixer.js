@@ -39,7 +39,7 @@ const LoopMode = {
  * skeletal or morph animations through THREE.AnimationMixer.
  * See: https://threejs.org/docs/?q=animation#Reference/Animation/AnimationMixer
  */
-module.exports = AFRAME.registerComponent('animation-mixer', {
+AFRAME.registerComponent('animation-mixer', {
   schema: {
     clip: { default: '*' },
     duration: { default: 0 },
