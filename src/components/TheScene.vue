@@ -37,7 +37,8 @@
         Model author: https://sketchfab.com/mvrc.art (Maxim Mavrichev)
         Model license: CC BY 4.0 ( https://creativecommons.org/licenses/by/4.0/ )
       -->
-      <a-asset-item  id="room" src="assets/vr_gallery.glb"></a-asset-item>
+      <a-asset-item id="room" src="assets/vr_gallery.glb"></a-asset-item>
+      <a-asset-item id="sound-1" response-type="arraybuffer" src="assets/sound1.mp3" preload="auto"></a-asset-item>
     </a-assets>
 
     <a-entity
@@ -66,6 +67,7 @@
         :color="colorBoxLeft"
         position="7 0.5 -3"
         @click="colorBoxRight = randomHsl()"
+        sound="src: #sound-1; on: click;"
       />
 
       <BoxColorChanging
@@ -74,6 +76,7 @@
         :color="colorBoxRight"
         position="7 0.5 3"
         @click="colorBoxLeft = randomHsl()"
+        sound="src: #sound-1; on: click;"
       />
     </a-entity>
 
