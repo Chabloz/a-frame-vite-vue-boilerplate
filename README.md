@@ -9,6 +9,8 @@ Included in the boilerplate:
 - simple-navmesh-constraint: https://github.com/AdaRoseCannon/aframe-xr-boilerplate (MIT Licence)
 - 3D Room model: [VR Gallery](https://sketchfab.com/3d-models/vr-gallery-1ac32ed62fdf424498acc146fad31f7e) by [Maxim Mavrichev](https://sketchfab.com/mvrc.art) is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
+**Demo**: https://onivers.com/aframe-vue-boilerplate/
+
 Create a folder for your project and :
 
 ### Clone (or fork, or download)
