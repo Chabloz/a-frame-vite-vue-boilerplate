@@ -1,10 +1,12 @@
 AFRAME.registerComponent('listen-to', {
   multiple: true,
+
   schema: {
     target: {type: 'selector'},
     event: {type: 'string', default: 'click'},
     emit: {type: 'string', default: 'click'},
   },
+
   init: function () {
     this.onEvent = this.onEvent.bind(this);
     this.data.target.addEventListener(this.data.event, this.onEvent);
@@ -20,7 +22,9 @@ AFRAME.registerComponent('listen-to', {
       this.data.target.addEventListener(this.data.event, this.onEvent);
     }
   },
+
   remove: function () {
     this.data.target.removeEventListener(this.data.event, this.onEvent);
-  }
+  },
+
 });

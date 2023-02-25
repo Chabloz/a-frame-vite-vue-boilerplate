@@ -6,7 +6,8 @@
   import TheCameraRig from './TheCameraRig.vue';
   import TheNavMesh from './TheNavMesh.vue';
 
-  import '../aframe/life-like-automaton';
+  import '../aframe/life-like-automaton.js';
+  import '../aframe/teleport-camera-rig.js';
 
   defineProps({
     scale: Number,
@@ -52,13 +53,13 @@
         geometry="primitive: plane; height: 2; width: 2;"
         position="2 2 3.9"
         rotation="-180 0 0"
-        life-like-automaton="genPerSec: 25;"
+        life-like-automaton="resolution: 64; maxGen: 30;  birthRule: 3,4,5,6,7; survivalRule: 5,6;"
       ></a-entity>
 
       <a-entity
         geometry="primitive: plane; height: 2; width: 2;"
         position="2 2 -3.9"
-        life-like-automaton="genPerSec: 25; maxGen: 10; birthRule: 6,7,8; survivalRule: 4,5,6,7,8;"
+        life-like-automaton="maxGen: 10; birthRule: 6,7,8; survivalRule: 4,5,6,7,8;"
       ></a-entity>
 
       <BoxColorChanging
@@ -78,7 +79,29 @@
         @click="colorBoxLeft = randomHsl()"
         sound="src: #sound-1; on: click;"
       />
+
+      <a-entity
+        id="portal-life"
+        link="visualAspectEnabled: true; on: none; "
+        clickable
+        rotation="0 90 0"
+        position="-7.99 1.5 0"
+        life-like-automaton="resolution: 256;"
+        teleport-camera-rig="y: 100;"
+      >
+        <a-text
+          align="center"
+          value="Enter the Life Cube Room"
+          position="0 1.2 0"
+        ></a-text>
+      </a-entity>
     </a-entity>
+
+    <a-box
+      life-like-automaton="backSide: true;"
+      position="0 102 0"
+      depth="4" height="4" width="4"
+    ></a-box>
 
     <TheNavMesh />
 

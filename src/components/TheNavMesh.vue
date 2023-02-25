@@ -15,4 +15,12 @@
     material="color: red"
     visible="false"
   ></a-entity>
+  <a-entity
+    geometry="primitive: plane; height: 3; width: 3"
+    position="0 100.01 0"
+    rotation="-90 0 0"
+    data-role="nav-mesh"
+    material="color: green"
+    visible="false"
+  ></a-entity>
 </template>

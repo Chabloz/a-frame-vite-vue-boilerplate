@@ -453,8 +453,11 @@ AFRAME.registerComponent('blink-controls', {
       }
       rig.setAttribute('position', newRigLocalPosition)
 
+      // Added for this boilerplate
+      // Recenter the camera entity on the center of the rig on teleportation
       if (this.data.cameraRig) {
-        this.teleportOrigin.setAttribute('position', {x: 0, z: 0});
+        this.teleportOrigin.object3D.position.x = 0;
+        this.teleportOrigin.object3D.position.z = 0;
       }
 
       // Also take the headset/camera rotation itself into account

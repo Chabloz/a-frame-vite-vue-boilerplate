@@ -10,6 +10,8 @@ AFRAME.registerComponent('life-like-automaton', {
     maxGen: {type: 'int', default: Infinity},
     probAlive: {type: 'number', default: 0.5},
     genPerSec: {type: 'int', default: 60},
+
+    backSide: {type: 'boolean', default: false},
   },
 
   init: function () {
@@ -67,10 +69,10 @@ AFRAME.registerComponent('life-like-automaton', {
       `,
 
     });
-    // this.material.side = THREE.BackSide;
+
+    if (this.data.backSide) this.material.side = THREE.BackSide;
 
     this.tick = AFRAME.utils.throttleTick(this.nextGen, 1000/this.data.genPerSec, this);
-
   },
 
   nextGen: function (elapsedT) {

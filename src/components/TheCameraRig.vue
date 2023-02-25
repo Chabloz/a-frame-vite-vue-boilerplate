@@ -1,8 +1,8 @@
 <script setup>
-  import '../aframe/disable-in-vr';
-  import '../aframe/hide-in-vr';
-  import '../aframe/simple-navmesh-constraint';
-  import '../aframe/blink-controls';
+  import '../aframe/disable-in-vr.js';
+  import '../aframe/hide-in-vr.js';
+  import '../aframe/simple-navmesh-constraint.js';
+  import '../aframe/blink-controls.js';
 </script>
 
 <template>
