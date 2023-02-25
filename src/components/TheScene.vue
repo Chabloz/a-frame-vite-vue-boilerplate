@@ -82,7 +82,7 @@
 
       <a-entity
         id="portal-life"
-        link="visualAspectEnabled: true; on: none; "
+        link="visualAspectEnabled: true; on: none;"
         clickable
         rotation="0 90 0"
         position="-7.99 1.5 0"
