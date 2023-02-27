@@ -28,13 +28,15 @@ AFRAME.registerComponent('teleport-camera-rig', {
     this.data.camera.object3D.position.z = 0;
     // Rotate the rig if needed
     if (this.data.handleRotation) {
-      // Take the camera rotation into account
+      // Take the camera quaternion
       const quaternion = new THREE.Quaternion();
       quaternion.setFromEuler(new THREE.Euler(0, this.data.camera.object3D.rotation.y, 0));
+      // invert it to nullify the camera rotation
       quaternion.invert();
       // convert this.data.rot to a quaternion
       const quaternionToApply = new THREE.Quaternion();
       quaternionToApply.setFromEuler(new THREE.Euler(0, this.data.rot, 0));
+      // combine the two quaternions and apply to the rig
       quaternion.multiply(quaternionToApply);
       this.data.rig.object3D.setRotationFromQuaternion(quaternion);
     }
