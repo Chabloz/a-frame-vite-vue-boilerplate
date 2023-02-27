@@ -10,7 +10,7 @@ AFRAME.registerComponent('teleport-camera-rig', {
     y: {type: 'number', default: 0},
     z: {type: 'number', default: 0},
     handleRotation: {type: 'boolean', default: true},
-    rot: {type: 'number', default: 0},
+    rot: {type: 'number', default: 0}, // rotation in degrees
   },
 
   init: function () {
@@ -35,7 +35,8 @@ AFRAME.registerComponent('teleport-camera-rig', {
       quaternion.invert();
       // convert this.data.rot to a quaternion
       const quaternionToApply = new THREE.Quaternion();
-      quaternionToApply.setFromEuler(new THREE.Euler(0, this.data.rot, 0));
+      const rot = THREE.MathUtils.degToRad(this.data.rot);
+      quaternionToApply.setFromEuler(new THREE.Euler(0, rot, 0));
       // combine the two quaternions and apply to the rig
       quaternion.multiply(quaternionToApply);
       this.data.rig.object3D.setRotationFromQuaternion(quaternion);
