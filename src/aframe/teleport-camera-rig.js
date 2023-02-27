@@ -9,6 +9,9 @@ AFRAME.registerComponent('teleport-camera-rig', {
     x: {type: 'number', default: 0},
     y: {type: 'number', default: 0},
     z: {type: 'number', default: 0},
+    rotX: {type: 'number', default: 0},
+    rotY: {type: 'number', default: 0},
+    rotZ: {type: 'number', default: 0},
   },
 
   init: function () {
@@ -24,11 +27,12 @@ AFRAME.registerComponent('teleport-camera-rig', {
     // Put the camera at the centre of the rig
     this.data.camera.object3D.position.x = 0;
     this.data.camera.object3D.position.z = 0;
+
   },
 
   update: function (oldData) {
     if (oldData.on != this.data.on) {
-      this.el.removeEventListener(this.data.on, this.onEvent);
+      this.el.removeEventListener(oldData.on, this.onEvent);
       this.el.addEventListener(this.data.on, this.onEvent);
     }
   },

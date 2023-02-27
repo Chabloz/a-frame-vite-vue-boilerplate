@@ -21,7 +21,7 @@
   >
     <a-text
       align="center"
-      :value="`${label}`"
+      :value="label"
       position="0 1.2 0"
     ></a-text>
   </a-entity>
