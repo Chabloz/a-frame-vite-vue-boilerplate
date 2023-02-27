@@ -36,7 +36,7 @@ AFRAME.registerComponent('teleport-camera-rig', {
       const quaternionToApply = new THREE.Quaternion();
       quaternionToApply.setFromEuler(new THREE.Euler(0, this.data.rot, 0));
       quaternion.multiply(quaternionToApply);
-      this.data.rig.object3D.setRotationFromQuaternion(quaternion)
+      this.data.rig.object3D.setRotationFromQuaternion(quaternion);
     }
   },
 
