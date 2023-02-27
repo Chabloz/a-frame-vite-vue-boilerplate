@@ -14,6 +14,7 @@
       material="color: #333"
       position="0 -1 1.9"
       rotation="0 180 0"
+      :rot="0"
     />
   </a-box>
 </template>

@@ -9,9 +9,8 @@ AFRAME.registerComponent('teleport-camera-rig', {
     x: {type: 'number', default: 0},
     y: {type: 'number', default: 0},
     z: {type: 'number', default: 0},
-    rotX: {type: 'number', default: 0},
-    rotY: {type: 'number', default: 0},
-    rotZ: {type: 'number', default: 0},
+    handleRotation: {type: 'boolean', default: true},
+    rot: {type: 'number', default: 0},
   },
 
   init: function () {
@@ -27,7 +26,18 @@ AFRAME.registerComponent('teleport-camera-rig', {
     // Put the camera at the centre of the rig
     this.data.camera.object3D.position.x = 0;
     this.data.camera.object3D.position.z = 0;
-
+    // Rotate the rig if needed
+    if (this.data.handleRotation) {
+      // Take the camera rotation into account
+      const quaternion = new THREE.Quaternion();
+      quaternion.setFromEuler(new THREE.Euler(0, this.data.camera.object3D.rotation.y, 0));
+      quaternion.invert();
+      // convert this.data.rot to a quaternion
+      const quaternionToApply = new THREE.Quaternion();
+      quaternionToApply.setFromEuler(new THREE.Euler(0, this.data.rot, 0));
+      quaternion.multiply(quaternionToApply);
+      this.data.rig.object3D.setRotationFromQuaternion(quaternion)
+    }
   },
 
   update: function (oldData) {

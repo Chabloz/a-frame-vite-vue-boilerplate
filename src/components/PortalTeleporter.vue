@@ -2,10 +2,11 @@
   import '../aframe/teleport-camera-rig.js';
 
   defineProps({
+    label: {type: String, default: ''},
     x: {type: Number, default: 0},
     y: {type: Number, default: 0},
     z: {type: Number, default: 0},
-    label: {type: String, default: ''},
+    rot: {type: [Number, Boolean], default: false},
   });
 </script>
 
@@ -17,6 +18,8 @@
       x: ${x};
       y: ${y};
       z: ${z};
+      handleRotation: ${rot === false ? 'false' : 'true'};
+      rot: ${rot === false ? 'false' : rot};
     `"
   >
     <a-text
