@@ -8,6 +8,7 @@
 
   import '../aframe/life-like-automaton.js';
   import '../aframe/teleport-camera-rig.js';
+  import '../aframe/wall-hole.js';
 
   defineProps({
     scale: Number,
@@ -28,6 +29,8 @@
       overlayElement: ${overlaySelector};
     `"
   >
+
+    <a-entity wall-hole position="0 2 -2" material="color: blue; side: double;"></a-entity>
 
     <a-assets @loaded="allAssetsLoaded = true">
       <!--
