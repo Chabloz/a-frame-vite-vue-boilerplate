@@ -1,5 +1,7 @@
 <script setup>
   import '../aframe/teleport-camera-rig.js';
+  import '../aframe/clickable.js';
+
 
   defineProps({
     label: {type: String, default: ''},
