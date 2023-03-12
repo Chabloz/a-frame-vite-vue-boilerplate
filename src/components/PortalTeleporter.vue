@@ -21,7 +21,7 @@
       y: ${y};
       z: ${z};
       handleRotation: ${rot === false ? 'false' : 'true'};
-      rot: ${rot === false ? 'false' : rot};
+      rot: ${rot === false ? 0 : rot};
     `"
   >
     <a-text
