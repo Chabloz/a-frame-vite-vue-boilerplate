@@ -1,6 +1,6 @@
 # a-frame-vite-vue-boilerplate
 
-### A boilerplate for A-Frame 1.4, Vue 3.2 et Vite 4.1
+### A boilerplate for A-Frame 1.5, Vue 3.4 et Vite 5.0
 
 Included in the boilerplate:
 
