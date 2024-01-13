@@ -2,12 +2,9 @@
   import { ref } from 'vue';
 
   import TheCameraRig from './TheCameraRig.vue';
-  import TheNavMesh from './TheNavMesh.vue';
   import TheMainRoom from './TheMainRoom.vue';
   import TheLifeCubeRoom from './TheLifeCubeRoom.vue';
-
-  import '../aframe/life-like-automaton.js';
-  import '../aframe/teleport-camera-rig.js';
+  import ThePhysicRoom from './ThePhysicRoom.vue';
 
   defineProps({
     scale: Number,
@@ -27,6 +24,7 @@
       optionalFeatures: dom-overlay;
       overlayElement: ${overlaySelector};
     `"
+    physx="autoLoad: true; delay: 1000; useDefaultScene: false">
   >
 
     <a-assets @loaded="allAssetsLoaded = true">
@@ -38,14 +36,14 @@
       -->
       <a-asset-item id="room" src="assets/vr_gallery.glb"></a-asset-item>
       <a-asset-item id="sound-1" response-type="arraybuffer" src="assets/sound1.mp3" preload="auto"></a-asset-item>
+      <img id="room-texture" :src="`assets/mainRoom.png`">
     </a-assets>
 
     <template v-if="allAssetsLoaded">
       <TheMainRoom :scale="scale" />
       <TheLifeCubeRoom />
+      <ThePhysicRoom />
     </template>
-
-    <TheNavMesh />
 
     <TheCameraRig />
 

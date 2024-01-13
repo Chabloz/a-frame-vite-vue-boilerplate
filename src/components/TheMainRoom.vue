@@ -21,6 +21,7 @@
     position="0 0 -5"
     scale="1 1.1 1"
   >
+
     <a-entity
       geometry="primitive: plane; height: 2; width: 2;"
       position="2 2 3.9"
@@ -60,5 +61,32 @@
       :y="100"
     />
 
+    <PortalTeleporter
+      label="Enter the Physic Room"
+      life-like-automaton="resolution: 256;"
+      position="-6 1.5 -3.99"
+      rotation="0 0 0"
+      :y="-100"
+    />
+
   </a-entity>
+
+  <!-- Main room navigation mesh  -->
+  <a-entity
+    geometry="primitive: plane; height: 13.5; width: 6"
+    position="0 0.01 -4.75"
+    rotation="-90 0 0"
+    data-role="nav-mesh"
+    material="color: blue"
+    visible="false"
+  ></a-entity>
+  <a-entity
+    geometry="primitive: plane; height: .5; width: 5"
+    position="0 0.01 -11.75"
+    rotation="-90 0 0"
+    data-role="nav-mesh"
+    material="color: red"
+    visible="false"
+  ></a-entity>
+
 </template>

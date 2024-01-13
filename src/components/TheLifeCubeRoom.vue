@@ -11,10 +11,21 @@
   >
     <PortalTeleporter
       label="Back to main room"
-      material="color: #333"
+      material="src: #room-texture"
       position="0 -1 1.9"
       rotation="0 180 0"
       :rot="0"
     />
   </a-box>
+
+  <!-- Life Cube room navigation mesh -->
+  <a-entity
+    data-role="nav-mesh"
+    geometry="primitive: plane; height: 3; width: 3"
+    position="0 100.01 0"
+    rotation="-90 0 0"
+    material="color: green"
+    visible="false"
+  ></a-entity>
+
 </template>
