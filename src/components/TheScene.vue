@@ -24,7 +24,12 @@
       optionalFeatures: dom-overlay;
       overlayElement: ${overlaySelector};
     `"
-    physx="autoLoad: true; delay: 1000; useDefaultScene: false">
+    physx="
+      autoLoad: true;
+      delay: 1000;
+      useDefaultScene: false;
+      wasmUrl: lib/physx.release.wasm;
+    ">
   >
 
     <a-assets @loaded="allAssetsLoaded = true">

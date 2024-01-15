@@ -58,6 +58,7 @@
       life-like-automaton="resolution: 256;"
       position="-7.99 1.5 0"
       rotation="0 90 0"
+      :rot="180"
       :y="100"
     />
 
@@ -66,6 +67,7 @@
       life-like-automaton="resolution: 256;"
       position="-6 1.5 -3.99"
       rotation="0 0 0"
+      :rot="180"
       :y="-100"
     />
 
