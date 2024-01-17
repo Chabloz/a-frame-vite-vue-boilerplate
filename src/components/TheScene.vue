@@ -29,7 +29,7 @@
       delay: 1000;
       useDefaultScene: false;
       wasmUrl: lib/physx.release.wasm;
-    ">
+    "
   >
 
     <a-assets @loaded="allAssetsLoaded = true">
