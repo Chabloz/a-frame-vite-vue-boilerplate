@@ -64,11 +64,11 @@
 
     <PortalTeleporter
       label="Enter the Physic Room"
-      life-like-automaton="resolution: 256;"
+      material="src: #room-physic-texture"
       position="-6 1.5 -3.99"
       rotation="0 0 0"
       :rot="180"
-      :y="-99.2"
+      :y="200"
     />
 
   </a-entity>

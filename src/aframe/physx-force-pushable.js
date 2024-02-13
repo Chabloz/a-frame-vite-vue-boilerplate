@@ -35,6 +35,8 @@ SOFTWARE.
  * Applies behavior to the current entity such that cursor clicks will apply a
  * strong impulse, pushing the entity away from the viewer.
  *
+ * 2024 Nicolas Chabloz modification: add schema to allow for customizing the target and the event.
+ *
  * Requires: physx
  */
 AFRAME.registerComponent('physx-force-pushable', {

@@ -32,6 +32,8 @@ SOFTWARE.
  *
  * Copyright (c) 2016 Don McCurdy
  *
+ * 2024 Nicolas Chabloz modification: Test if the entity has a physx-grabbable attribute before grabbing it.
+ *
  * Requires: physx
  */
 AFRAME.registerComponent('physx-grab', {
@@ -94,6 +96,9 @@ AFRAME.registerComponent('physx-grab', {
 
   onHit: function (evt) {
     var hitEl = evt.detail.otherComponent.el;
+    // Test if the hiot element has the grabbable attribute
+    if (!hitEl.hasAttribute('physx-grabbable')) return;
+
     // If the element is already grabbed (it could be grabbed by another controller).
     // If the hand is not grabbing the element does not stick.
     // If we're already grabbing something you can't grab again.
