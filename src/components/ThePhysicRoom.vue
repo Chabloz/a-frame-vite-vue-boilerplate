@@ -27,7 +27,7 @@
       material="src: #room-physic-out-texture"
       position="0 2.1 4.12"
       rotation="0 180 0"
-      :rot="0"
+      :rot="90"
     />
   </a-entity>
 
