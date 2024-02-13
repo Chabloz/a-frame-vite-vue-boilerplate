@@ -17,7 +17,6 @@
 <template>
   <a-scene
     background="color: black;"
-    renderer="colorManagement: true;"
     :webxr="`
       requiredFeatures: local-floor;
       referenceSpaceType: local-floor;

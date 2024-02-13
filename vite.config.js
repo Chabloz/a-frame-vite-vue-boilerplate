@@ -1,10 +1,18 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
-// https://vitejs.dev/config/
+const fullReloadPlugin = {
+  handleHotUpdate({ server }) {
+    server.ws.send({type: 'full-reload'});
+    return [];
+  },
+};
+
+
 export default defineConfig(({command, mode}) => {
 
   const config = {
+    base: '/aframe-vue-boilerplate/',
     plugins: [vue({
       template: {
         compilerOptions: {
@@ -12,7 +20,7 @@ export default defineConfig(({command, mode}) => {
           isCustomElement: tag => tag.startsWith('a-')
         },
       },
-    })],
+    }), fullReloadPlugin],
   };
 
   return config;
