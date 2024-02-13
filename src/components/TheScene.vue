@@ -47,7 +47,8 @@
       -->
       <a-asset-item id="physic-room" src="assets/3d_gallery_for_vr_projects.glb"></a-asset-item>
       <a-asset-item id="sound-1" response-type="arraybuffer" src="assets/sound1.mp3" preload="auto"></a-asset-item>
-      <img id="room-texture" :src="`assets/mainRoom.png`">
+      <img id="room-physic-out-texture" :src="`assets/main-room-from-physic-room.png`">
+      <img id="room-gol-out-texture" :src="`assets/main-room-from-gol-room.png`">
       <img id="room-physic-texture" :src="`assets/physicRoom.png`">
     </a-assets>
 
