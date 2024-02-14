@@ -23,6 +23,7 @@
       optionalFeatures: dom-overlay;
       overlayElement: ${overlaySelector};
     `"
+    xr-mode-ui="XRMode: xr"
     physx="
       autoLoad: true;
       delay: 1000;
