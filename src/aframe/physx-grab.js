@@ -96,7 +96,6 @@ AFRAME.registerComponent('physx-grab', {
 
   onHit: function (evt) {
     var hitEl = evt.detail.otherComponent.el;
-    // Test if the hiot element has the grabbable attribute
     if (!hitEl.hasAttribute('physx-grabbable')) return;
 
     // If the element is already grabbed (it could be grabbed by another controller).
