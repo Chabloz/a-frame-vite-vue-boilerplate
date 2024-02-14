@@ -1,12 +1,12 @@
 <script setup>
 import "../aframe/clickable.js";
 
-const exitImmersiveView = () => {
+function exitImmersiveView() {
   if (document.querySelector("a-scene").is("vr-mode")) {
     document.querySelector("a-scene").exitVR();
     console.info("Exit VR mode… bye!");
   }
-};
+}
 </script>
 
 <template>
