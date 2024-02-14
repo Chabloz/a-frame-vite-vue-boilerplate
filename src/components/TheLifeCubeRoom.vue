@@ -11,7 +11,7 @@
   >
     <PortalTeleporter
       label="Back to main room"
-      material="src: #room-texture"
+      material="src: #room-gol-out-texture"
       position="0 -1 1.9"
       rotation="0 180 0"
       :rot="0"
