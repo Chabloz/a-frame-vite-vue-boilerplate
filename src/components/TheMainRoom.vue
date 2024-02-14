@@ -3,6 +3,7 @@
   import { randomHsl } from '../utils/color.js';
   import BoxColorChanging from './BoxColorChanging.vue';
   import PortalTeleporter from './PortalTeleporter.vue';
+import ExitDoor from "./ExitDoor.vue";
 
   import '../aframe/life-like-automaton.js';
 
@@ -70,8 +71,9 @@
       :rot="180"
       :y="200"
     />
-
   </a-entity>
+
+  <ExitDoor />
 
   <!-- Main room navigation mesh  -->
   <a-entity
