@@ -13,7 +13,7 @@ function exitImmersiveView() {
   <a-box
     position="0 1.2 -13"
     material="color: blue"
-    visible="true"
+    visible="false"
     scale="1.3 2.5 0.19"
     clickable
     click-handler
