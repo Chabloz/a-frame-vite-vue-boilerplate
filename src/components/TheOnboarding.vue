@@ -22,6 +22,23 @@
       <p v-if="!loaded">loading...</p>
       <button v-if="loaded" @click="enterScene()">Enter scene</button>
       <div class="licences">
+      <section>
+        <h4>Movement modes support</h4>
+        <ul>
+          <li>
+            Desktop – Keyboard for move (WASD or Arrows keys) + Mouse for look
+            control (Drag and drop)
+          </li>
+          <li>
+            Mobile – 1x Finger touch to go forward + 2x Fingers touch to go
+            backward + Gaze cursor for click
+          </li>
+          <li>
+            VR Headset – AR/VR walk + Teleport (Grip for grab and laser for
+            click) + Gaze cursor for click
+          </li>
+        </ul>
+      </section>
         <dl>
           <dt>
             <i>Included</i>
@@ -121,4 +138,8 @@
     border: none;
     cursor: pointer;
   }
-</style>
+</style>#onboarding li {
+#onboarding li {
+  font-size: 1rem;
+  text-align: left;
+}
