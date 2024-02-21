@@ -40,7 +40,13 @@
         Model license: CC BY 4.0 ( https://creativecommons.org/licenses/by/4.0/ )
       -->
       <a-asset-item id="physic-room" src="assets/3d_gallery_for_vr_projects.glb"></a-asset-item>
+      <!--
+        Title: Little Robot Ball
+        Model source: https://sketchfab.com/3d-models/little-robot-ball-bd1792fd94fc4e82a043b8724bad8f75
+        Model author: https://sketchfab.com/Micheal-Holloway (Micheal Holloway)
+        Model license: CC BY 4.0 ( https://creativecommons.org/licenses/by/4.0/ )
 
+      -->
       <a-asset-item id="robot-ball" src="assets/little_robot_ball.glb"></a-asset-item>
 
       <a-asset-item id="robot-grey" src="assets/scene.gltf"></a-asset-item>
