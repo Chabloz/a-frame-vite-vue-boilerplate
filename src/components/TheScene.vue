@@ -3,8 +3,12 @@
 
   import TheCameraRig from './TheCameraRig.vue';
   import TheMainRoom from './TheMainRoom.vue';
+  import TheMainPlace from './TheMainPlace.vue';
   import TheLifeCubeRoom from './TheLifeCubeRoom.vue';
   import ThePhysicRoom from './ThePhysicRoom.vue';
+  import { randomHsl } from '../utils/color';
+  import '../aframe/duplicate-me.js';
+  import '../aframe/look-at.js';
 
   defineProps({
     scale: Number,
@@ -12,25 +16,14 @@
   });
 
   const allAssetsLoaded = ref(false);
+
+  function changeColor(evt) {
+    evt.target.setAttribute('color', randomHsl());
+  }
 </script>
 
 <template>
-  <a-scene
-    background="color: black;"
-    :webxr="`
-      requiredFeatures: local-floor;
-      referenceSpaceType: local-floor;
-      optionalFeatures: dom-overlay;
-      overlayElement: ${overlaySelector};
-    `"
-    xr-mode-ui="XRMode: xr"
-    physx="
-      autoLoad: true;
-      delay: 1000;
-      useDefaultScene: false;
-      wasmUrl: lib/physx.release.wasm;
-    "
-  >
+  <a-scene>
 
     <a-assets @loaded="allAssetsLoaded = true">
       <!--
@@ -47,6 +40,11 @@
         Model license: CC BY 4.0 ( https://creativecommons.org/licenses/by/4.0/ )
       -->
       <a-asset-item id="physic-room" src="assets/3d_gallery_for_vr_projects.glb"></a-asset-item>
+
+      <a-asset-item id="robot-ball" src="assets/little_robot_ball.glb"></a-asset-item>
+
+      <a-asset-item id="robot-grey" src="assets/scene.gltf"></a-asset-item>
+
       <a-asset-item id="sound-1" response-type="arraybuffer" src="assets/sound1.mp3" preload="auto"></a-asset-item>
       <img id="room-physic-out-texture" :src="`assets/main-room-from-physic-room.png`">
       <img id="room-gol-out-texture" :src="`assets/main-room-from-gol-room.png`">
@@ -54,9 +52,7 @@
     </a-assets>
 
     <template v-if="allAssetsLoaded">
-      <TheMainRoom :scale="scale" />
-      <TheLifeCubeRoom />
-      <ThePhysicRoom />
+      <TheMainPlace />
     </template>
 
     <TheCameraRig />
