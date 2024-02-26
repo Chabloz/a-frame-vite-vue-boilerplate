@@ -4,7 +4,6 @@
   import BoxColorChanging from './BoxColorChanging.vue';
   import PortalTeleporter from './PortalTeleporter.vue';
   import ExitDoor from "./ExitDoor.vue";
-  import '../aframe/bind-position.js';
 
   defineProps({
     scale: Number,
@@ -46,13 +45,11 @@
 
     <BoxColorChanging
       id="box-right"
-      :scale="scale * 2"
+      :scale="scale"
       :color="colorBoxRight"
       position="7 0.5 3"
       @click="colorBoxLeft = randomHsl()"
       sound="src: #sound-1; on: click;"
-      bind-rotation="target: #head;"
-      bind-position="target: #head;"
     />
 
     <PortalTeleporter
