@@ -53,7 +53,8 @@
           :id="`camera-${id}`"
           :secondary-camera="`
             cameraType: perspective;
-            output: circle;
+            output: scene;
+            aspectRatio: 1;
             outputElement: #portal-${id};
             sequence: before;
           `"
