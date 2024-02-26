@@ -54,12 +54,12 @@
         id="hand-right"
         hand-controls="hand: right"
         laser-controls="hand: right"
-        raycaster="far: 4; objects: [clickable]; showLine: false;"
+        raycaster="far: 4; objects: [clickable]; showLine: true;"
         physx-grab
       >
         <a-sphere id="hand-right-collider"
           radius="0.02"
-          visible="true"
+          visible="false"
           physx-body="type: kinematic; emitCollisionEvents: true">
         </a-sphere>
       </a-entity>
