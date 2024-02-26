@@ -53,6 +53,7 @@
     },
 
     render(scene, camera) {
+
       const renderer = this.el.sceneEl.renderer
 
       if (scene !== this.el.sceneEl.object3D ||
@@ -185,7 +186,6 @@
 
   AFRAME.registerComponent('secondary-camera', {
       schema: {
-          // Added for this boilerplate: add render to circle
           output: {type: 'string', oneOf: ['screen', 'plane', 'circle'], default: 'screen'},
           outputElement: {type: 'selector'},
           cameraType: {type: 'string', oneOf: ['perspective, orthographic'], default: 'perspective'},
@@ -231,19 +231,18 @@
               });
           }
 
-          // Added for this boilerplate: add render to circle
           if (this.data.output === 'plane' || this.data.output === 'circle') {
             if (!this.data.outputElement.hasLoaded) {
               this.data.outputElement.addEventListener("loaded", () => {
-                this.configureCameraToPlane()
+                this.configureCameraToPlaneOrCircle()
               });
             } else {
-              this.configureCameraToPlane()
+              this.configureCameraToPlaneOrCircle()
             }
           }
       },
 
-      configureCameraToPlane() {
+      configureCameraToPlaneOrCircle() {
         const object = this.data.outputElement.getObject3D('mesh');
         function nearestPowerOf2(n) {
           return 1 << 31 - Math.clz32(n);
@@ -271,12 +270,11 @@
         this.renderTargets = [newRenderTarget(),
                               newRenderTarget()]
 
-        // Added for this boilerplate: add render to circle
         if (this.data.output === 'circle') {
           this.camera.aspect = 1;
         } else {
           this.camera.aspect = object.geometry.parameters.width /
-                             object.geometry.parameters.height;
+                               object.geometry.parameters.height;
         }
       },
 
@@ -368,9 +366,6 @@
             renderer.shadowMap.autoUpdate = false; // Avoid re-computing shadows
 
             const renderTarget = this.renderTargets[this.activeRenderTarget];
-
-            // NC: modified to use colorSpace and outputColorSpace rather than encoding and outputEncoding
-            // renderTarget.texture.encoding = renderer.outputEncoding;
             renderTarget.texture.colorSpace = renderer.outputColorSpace;
             renderer.setRenderTarget(renderTarget);
             renderer.state.buffers.depth.setMask( true ); // make sure the depth buffer is writable so it can be properly cleared, see #18897

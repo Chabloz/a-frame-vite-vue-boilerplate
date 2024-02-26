@@ -4,6 +4,8 @@
   import '../aframe/simple-navmesh-constraint.js';
   import '../aframe/blink-controls.js';
   import '../aframe/physx-grab.js';
+  import '../aframe/visibility.js';
+  import '../aframe/brush.js';
 </script>
 
 <template>
@@ -25,6 +27,7 @@
           geometry="primitive: circle; radius: 0.0003;"
           material="shader: flat; color: white;"
           cursor
+          brush
           raycaster="far: 4; objects: [clickable]; showLine: false;"
           position="0 0 -0.1"
           disable-in-vr="component: raycaster; disableInAR: false;"
@@ -52,14 +55,16 @@
 
       <a-entity
         id="hand-right"
-        hand-controls="hand: right"
+        ahand-controls="hand: right"
+        oculus-touch-controls="hand: right; model: false;"
+        visibility="false"
         laser-controls="hand: right"
-        raycaster="far: 4; objects: [clickable]; showLine: true;"
+        raycaster="far: 4; objects: [clickable]; showLine: false;"
         physx-grab
       >
         <a-sphere id="hand-right-collider"
           radius="0.02"
-          visible="false"
+          visible="true"
           physx-body="type: kinematic; emitCollisionEvents: true">
         </a-sphere>
       </a-entity>

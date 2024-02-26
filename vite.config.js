@@ -11,9 +11,9 @@ const fullReloadPlugin = {
 
 export default defineConfig(({ command, mode }) => {
   const config = {
-    base: "/aframe-vue-boilerplate/",
+    base: "/teleport2/",
     plugins: [
-      basicSsl(),
+      // basicSsl(),
       vue({
         template: {
           compilerOptions: {
