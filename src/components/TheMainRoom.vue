@@ -5,6 +5,9 @@
   import PortalTeleporter from './PortalTeleporter.vue';
   import ExitDoor from "./ExitDoor.vue";
 
+  import "../aframe/bind-position.js";
+  import "../aframe/bind-rotation.js";
+
   defineProps({
     scale: Number,
   });
@@ -51,6 +54,13 @@
       @click="colorBoxLeft = randomHsl()"
       sound="src: #sound-1; on: click;"
     />
+
+    <a-entity id="drop-zone"
+      geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
+      material="color: #5a17ed; side: double"
+      position="-1 1 -4"
+      rotation="90 0 0"
+    ></a-entity>
 
     <PortalTeleporter
       label="Enter the Life Cube Room"
