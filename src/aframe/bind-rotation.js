@@ -1,25 +1,21 @@
-AFRAME.registerComponent("bind-rotation", {
+AFRAME.registerComponent('bind-rotation', {
   schema: {
-    target: { type: "selector" },
+    target: {type: 'selector'}
   },
-  tick: function () {
-    this.el.object3D.rotation.copy(this.data.target.object3D.rotation);
-  },
-});
 
-AFRAME.registerComponent("bind-position", {
-  schema: {
-    target: { type: "selector" },
-  },
   init: function () {
-    this.targetWorldPos = new THREE.Vector3();
-    this.myWorldPos = new THREE.Vector3();
+    this.position = new THREE.Vector3();
+    this.quaternion = new THREE.Quaternion();
+    this.scale = new THREE.Vector3();
   },
+
   tick: function () {
-    this.data.target.object3D.getWorldPosition(this.targetWorldPos);
-    this.el.object3D.position.copy(this.targetWorldPos);
-    // // world to local
-    // this.myWorldPos = this.el.object3D.parent.worldToLocal(this.myWorldPos);
-    // this.el.object3D.position.copy(this.targetWorldPos);
-  },
+    const sourceObject = this.data.target.object3D;
+    const targetObject = this.el.object3D;
+
+    sourceObject.matrixWorld.decompose(this.position, this.quaternion, this.scale);
+    targetObject.quaternion.copy( this.quaternion);
+    targetObject.updateMatrixWorld(true);
+
+  }
 });

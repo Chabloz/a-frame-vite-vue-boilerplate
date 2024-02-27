@@ -15,6 +15,9 @@
       position="0 -0.5 1.9"
       rotation="0 180 0"
       :rot="0"
+      :cameraEffect="true"
+      :cameraY="1.65"
+      :cameraRot="-180"
     />
   </a-box>
 

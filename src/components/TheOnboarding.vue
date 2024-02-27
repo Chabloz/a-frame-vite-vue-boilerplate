@@ -22,23 +22,23 @@
       <p v-if="!loaded">loading...</p>
       <button v-if="loaded" @click="enterScene()">Enter scene</button>
       <div class="licences">
-      <section>
-        <h4>Movement modes support</h4>
-        <ul>
-          <li>
-            Desktop – Keyboard for move (WASD or Arrows keys) + Mouse for look
-            control (Drag and drop)
-          </li>
-          <li>
-            Mobile – 1x Finger touch to go forward + 2x Fingers touch to go
-            backward + Gaze cursor for click
-          </li>
-          <li>
-            VR Headset – AR/VR walk + Teleport (Grip for grab and laser for
-            click) + Gaze cursor for click
-          </li>
-        </ul>
-      </section>
+        <section>
+          <h4>Movement modes support</h4>
+          <ul>
+            <li>
+              Desktop – Keyboard for move (WASD or Arrows keys) + Mouse for look
+              control (Drag and drop)
+            </li>
+            <li>
+              Mobile – 1x Finger touch to go forward + 2x Fingers touch to go
+              backward + Gaze cursor for click
+            </li>
+            <li>
+              VR/AR – walk + Teleport (Grip for grab and laser for
+              click) + Gaze cursor for click
+            </li>
+          </ul>
+        </section>
         <dl>
           <dt>
             <i>Included</i>
@@ -62,6 +62,12 @@
           </dd>
 
           <dt>
+            <a href="https://github.com/diarmidmackenzie/aframe-multi-camera/" target="_blank">aframe-multi-camera</a>
+          </dt><dd>
+            <a href="https://github.com/diarmidmackenzie/aframe-multi-camera/blob/main/LICENSE" target="_blank">MIT License</a>
+          </dd>
+
+          <dt>
             <a href=" https://github.com/AdaRoseCannon/aframe-xr-boilerplate" target="_blank">simple-navmesh-constraint</a>
           </dt><dd>
             By Ada Rose Cannon under MIT License
@@ -80,6 +86,7 @@
             by <a href="https://sketchfab.com/tekuto1s" target="_blank">tekuto1s</a>
             under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank">CC BY 4.0</a>
           </dd>
+
         </dl>
       </div>
     </div>
@@ -94,6 +101,7 @@
   }
   .licences {
     margin: 2rem 0;
+    padding-bottom: 1rem;
     font-size: 1rem;
     text-align: left;
   }
