@@ -7,6 +7,8 @@
 
   import '../aframe/bind-position.js';
   import '../aframe/bind-rotation.js';
+  import '../aframe/copy-position.js';
+  import '../aframe/copy-rotation.js';
 
   defineProps({
     scale: Number,
@@ -16,10 +18,23 @@
   const colorBoxRight = ref(randomHsl());
 
   function grabTheThing(evt) {
-    // if something already grabbed, return
-    if (document.querySelector('[data-grabbed]'))  return;
-
+    // if something already grabbed, switch it
     const el = evt.target;
+    const grabbedEl = document.querySelector('[data-grabbed]');
+    if (grabbedEl) {
+      grabbedEl.removeAttribute('bind-position');
+      grabbedEl.removeAttribute('bind-rotation');
+      grabbedEl.setAttribute('copy-position', `target: #${el.id}`);
+      grabbedEl.setAttribute('copy-rotation', `target: #${el.id}`);
+      delete grabbedEl.dataset.grabbed;
+      delete grabbedEl.dataset.dropped;
+      if (el.dataset.dropped) {
+        grabbedEl.dataset.dropped = el.dataset.dropped;
+      }
+    }
+    el.removeAttribute('copy-position');
+    el.removeAttribute('copy-rotation');
+
     if (el.sceneEl.is('vr-mode')) {
       el.setAttribute('bind-position', 'target: #hand-right');
       el.setAttribute('bind-rotation', 'target: #hand-right');
@@ -111,6 +126,7 @@
     ></a-entity>
 
     <a-box
+      id="box-1-grabbable"
       color="red"
       scale="0.3 0.3 0.3"
       position="0 0.25 1"
@@ -119,6 +135,7 @@
     ></a-box>
 
     <a-box
+      id="box-2-grabbable"
       color="purple"
       scale="0.3 0.3 0.3"
       position="0 0.25 -1"
