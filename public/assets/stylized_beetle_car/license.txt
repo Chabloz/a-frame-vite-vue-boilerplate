@@ -1,0 +1,11 @@
+Model Information:
+* title:	Stylized Beetle Car
+* source:	https://sketchfab.com/3d-models/stylized-beetle-car-0323feeb81e84e67a13acc964b6c609b
+* author:	Split Studios (https://sketchfab.com/splitstudios)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Stylized Beetle Car" (https://sketchfab.com/3d-models/stylized-beetle-car-0323feeb81e84e67a13acc964b6c609b) by Split Studios (https://sketchfab.com/splitstudios) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

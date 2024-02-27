@@ -1,18 +1,18 @@
 <script setup>
-  import { ref } from 'vue';
-  import { randomHsl } from '../utils/color.js';
-  import BoxColorChanging from './BoxColorChanging.vue';
-  import PortalTeleporter from './PortalTeleporter.vue';
+import { ref } from "vue";
+import { randomHsl } from "../utils/color.js";
+import BoxColorChanging from "./BoxColorChanging.vue";
+import PortalTeleporter from "./PortalTeleporter.vue";
 import ExitDoor from "./ExitDoor.vue";
 
-  import '../aframe/life-like-automaton.js';
+import "../aframe/life-like-automaton.js";
 
-  defineProps({
-    scale: Number,
-  });
+defineProps({
+  scale: Number,
+});
 
-  const colorBoxLeft = ref(randomHsl());
-  const colorBoxRight = ref(randomHsl());
+const colorBoxLeft = ref(randomHsl());
+const colorBoxRight = ref(randomHsl());
 </script>
 
 <template>
@@ -22,7 +22,6 @@ import ExitDoor from "./ExitDoor.vue";
     position="0 0 -5"
     scale="1 1.1 1"
   >
-
     <a-entity
       geometry="primitive: plane; height: 2; width: 2;"
       position="2 2 3.9"
@@ -71,6 +70,17 @@ import ExitDoor from "./ExitDoor.vue";
       :rot="180"
       :y="200"
     />
+
+    <PortalTeleporter
+      label="Enter the Test Room"
+      color="red"
+      position="-2 1.5 -3.99"
+      rotation="0 0 0"
+      :rot="180"
+      :x="0"
+      :y="50"
+      :z="0"
+    />
   </a-entity>
 
   <ExitDoor />
@@ -92,5 +102,4 @@ import ExitDoor from "./ExitDoor.vue";
     material="color: red"
     visible="false"
   ></a-entity>
-
 </template>
