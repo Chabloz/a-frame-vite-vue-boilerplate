@@ -55,12 +55,27 @@
       sound="src: #sound-1; on: click;"
     />
 
-    <a-entity id="drop-zone"
+    <a-entity id="drop-zone-left"
       geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
       material="color: #5a17ed; side: double"
-      position="-1 1 -4"
+      position="-1.8 1 -4"
       rotation="90 0 0"
-    ></a-entity>
+    >
+      <a-sphere
+        color="red"
+        radius="0.2"
+        position="0 .2 0"
+        clickable
+      ></a-sphere>
+    </a-entity>
+
+    <a-entity id="drop-zone-right"
+      geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
+      material="color: #5a17ed; side: double"
+      position="-1.8 1 4"
+      rotation="90 0 180"
+    >
+    </a-entity>
 
     <PortalTeleporter
       label="Enter the Life Cube Room"
