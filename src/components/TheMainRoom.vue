@@ -3,10 +3,10 @@
   import { randomHsl } from '../utils/color.js';
   import BoxColorChanging from './BoxColorChanging.vue';
   import PortalTeleporter from './PortalTeleporter.vue';
-  import ExitDoor from "./ExitDoor.vue";
+  import ExitDoor from './ExitDoor.vue';
 
-  import "../aframe/bind-position.js";
-  import "../aframe/bind-rotation.js";
+  import '../aframe/bind-position.js';
+  import '../aframe/bind-rotation.js';
 
   defineProps({
     scale: Number,
@@ -14,6 +14,41 @@
 
   const colorBoxLeft = ref(randomHsl());
   const colorBoxRight = ref(randomHsl());
+
+  function grabTheThing(evt) {
+    // if something already grabbed, return
+    if (document.querySelector('[data-grabbed]'))  return;
+
+    const el = evt.target;
+    if (el.sceneEl.is('vr-mode')) {
+      el.setAttribute('bind-position', 'target: #hand-right');
+      el.setAttribute('bind-rotation', 'target: #hand-right');
+    } else {
+      el.setAttribute('bind-position', 'target: #dummy-hand-right');
+      el.setAttribute('bind-rotation', 'target: #dummy-hand-right; convertToLocal: true');
+    }
+    el.dataset.grabbed = true;
+    delete el.dataset.dropped;
+  }
+
+  function dropTheThing(evt) {
+    const grabbedEl = document.querySelector('[data-grabbed]');
+    // if nothing grabbed, return
+    if (!grabbedEl) return;
+
+    const dropZoneId = evt.target.id;
+    grabbedEl.setAttribute('bind-position', `target: #${dropZoneId};`);
+    grabbedEl.setAttribute('bind-rotation', `target: #${dropZoneId};`);
+    delete grabbedEl.dataset.grabbed;
+
+    // if something was in the drop zone, grab it
+    const elInDropZone = document.querySelector(`[data-dropped="${dropZoneId}"]`);
+    if (elInDropZone) {
+      grabTheThing({ target: elInDropZone });
+    };
+
+    grabbedEl.dataset.dropped = dropZoneId;
+  }
 </script>
 
 <template>
@@ -55,27 +90,41 @@
       sound="src: #sound-1; on: click;"
     />
 
-    <a-entity id="drop-zone-left"
+    <a-entity
+      id="drop-zone-left"
       geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
-      material="color: #5a17ed; side: double"
+      material="color: red; side: double"
       position="-1.8 1 -4"
       rotation="90 0 0"
-    >
-      <a-sphere
-        color="red"
-        radius="0.2"
-        position="0 .2 0"
-        clickable
-      ></a-sphere>
-    </a-entity>
+      clickable
+      @click="evt => dropTheThing(evt)"
+    ></a-entity>
 
-    <a-entity id="drop-zone-right"
+    <a-entity
+      id="drop-zone-right"
       geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
-      material="color: #5a17ed; side: double"
+      material="color: purple; side: double"
       position="-1.8 1 4"
       rotation="90 0 180"
-    >
-    </a-entity>
+      clickable
+      @click="evt => dropTheThing(evt)"
+    ></a-entity>
+
+    <a-box
+      color="red"
+      scale="0.3 0.3 0.3"
+      position="0 0.25 1"
+      clickable
+      @click="evt => grabTheThing(evt)"
+    ></a-box>
+
+    <a-box
+      color="purple"
+      scale="0.3 0.3 0.3"
+      position="0 0.25 -1"
+      clickable
+      @click="evt => grabTheThing(evt)"
+    ></a-box>
 
     <PortalTeleporter
       label="Enter the Life Cube Room"

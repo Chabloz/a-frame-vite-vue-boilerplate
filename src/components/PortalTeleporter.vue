@@ -59,7 +59,7 @@
             sequence: before;
           `"
           :position="`${cameraX} ${cameraY} ${cameraZ}`"
-          :bind-rotation="`target: ${cameraSelector}`"
+          :bind-rotation="`target: ${cameraSelector};`"
         ></a-entity>
       </a-entity>
     </Teleport>

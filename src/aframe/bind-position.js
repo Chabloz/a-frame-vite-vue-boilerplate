@@ -1,6 +1,6 @@
 AFRAME.registerComponent('bind-position', {
   schema: {
-    target: {type: 'selector'}
+    target: {type: 'selector'},
   },
 
   init: function () {
