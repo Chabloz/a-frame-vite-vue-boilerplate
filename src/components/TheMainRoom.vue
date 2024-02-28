@@ -1,14 +1,14 @@
 <script setup>
   import { ref } from 'vue';
   import { randomHsl } from '../utils/color.js';
+  import { copyPosition, copyRotation } from '../utils/aframe.js';
+
   import BoxColorChanging from './BoxColorChanging.vue';
   import PortalTeleporter from './PortalTeleporter.vue';
   import ExitDoor from './ExitDoor.vue';
 
   import '../aframe/bind-position.js';
   import '../aframe/bind-rotation.js';
-  import '../aframe/copy-position.js';
-  import '../aframe/copy-rotation.js';
 
   defineProps({
     scale: Number,
@@ -24,16 +24,14 @@
     if (grabbedEl) {
       grabbedEl.removeAttribute('bind-position');
       grabbedEl.removeAttribute('bind-rotation');
-      grabbedEl.setAttribute('copy-position', `target: #${el.id}`);
-      grabbedEl.setAttribute('copy-rotation', `target: #${el.id}`);
+      copyPosition(el, grabbedEl);
+      copyRotation(el, grabbedEl);
       delete grabbedEl.dataset.grabbed;
       delete grabbedEl.dataset.dropped;
       if (el.dataset.dropped) {
         grabbedEl.dataset.dropped = el.dataset.dropped;
       }
     }
-    el.removeAttribute('copy-position');
-    el.removeAttribute('copy-rotation');
 
     if (el.sceneEl.is('vr-mode')) {
       el.setAttribute('bind-position', 'target: #hand-right');
@@ -51,11 +49,14 @@
     // if nothing grabbed, return
     if (!grabbedEl) return;
 
-    const dropZoneId = evt.target.id;
-    grabbedEl.setAttribute('bind-position', `target: #${dropZoneId};`);
-    grabbedEl.setAttribute('bind-rotation', `target: #${dropZoneId};`);
+    //drop it
+    grabbedEl.removeAttribute('bind-position');
+    grabbedEl.removeAttribute('bind-rotation');
+    copyPosition(evt.target, grabbedEl);
+    copyRotation(evt.target, grabbedEl);
     delete grabbedEl.dataset.grabbed;
 
+    const dropZoneId = evt.target.id;
     // if something was in the drop zone, grab it
     const elInDropZone = document.querySelector(`[data-dropped="${dropZoneId}"]`);
     if (elInDropZone) {
