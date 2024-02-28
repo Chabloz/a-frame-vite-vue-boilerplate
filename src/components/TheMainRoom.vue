@@ -9,6 +9,7 @@
 
   import '../aframe/bind-position.js';
   import '../aframe/bind-rotation.js';
+  import '../aframe/listen-to.js';
 
   defineProps({
     scale: Number,
@@ -108,23 +109,39 @@
 
     <a-entity
       id="drop-zone-left"
-      geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
+      geometry="primitive: sphere; phiLength: 180; radius: 0.52; thetaLength: 90;"
       material="color: red; side: double"
       position="-1.8 1 -4"
       rotation="90 0 0"
       clickable
+    ></a-entity>
+
+
+    <a-entity
+      id="drop-zone-left-spot"
+      position="-1.8 1 -3.7"
+      rotation="90 0 180"
+      listen-to="target: #drop-zone-left;"
       @click="evt => dropTheThing(evt)"
     ></a-entity>
 
     <a-entity
       id="drop-zone-right"
-      geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
+      geometry="primitive: sphere; phiLength: 180; radius: 0.52; thetaLength: 90;"
       material="color: purple; side: double"
       position="-1.8 1 4"
       rotation="90 0 180"
       clickable
+    ></a-entity>
+
+    <a-entity
+      id="drop-zone-right-spot"
+      position="-1.8 1 3.7"
+      rotation="90 0 180"
+      listen-to="target: #drop-zone-right;"
       @click="evt => dropTheThing(evt)"
     ></a-entity>
+
 
     <a-box
       id="box-1-grabbable"
