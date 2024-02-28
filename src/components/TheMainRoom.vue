@@ -35,7 +35,7 @@
 
     if (el.sceneEl.is('vr-mode')) {
       el.setAttribute('bind-position', 'target: #hand-right');
-      el.setAttribute('bind-rotation', 'target: #hand-right');
+      el.setAttribute('bind-rotation', 'target: #hand-right; convertToLocal: true');
     } else {
       el.setAttribute('bind-position', 'target: #dummy-hand-right');
       el.setAttribute('bind-rotation', 'target: #dummy-hand-right; convertToLocal: true');
