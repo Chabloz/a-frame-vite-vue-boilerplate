@@ -121,7 +121,7 @@
       position="-1.8 1 -3.7"
       rotation="90 0 180"
       listen-to="target: #drop-zone-left;"
-      @click="evt => dropTheThing(evt)"
+      simple-grab-drop-zone
     ></a-entity>
 
     <a-entity
@@ -138,7 +138,7 @@
       position="-1.8 1 3.7"
       rotation="90 0 180"
       listen-to="target: #drop-zone-right;"
-      @click="evt => dropTheThing(evt)"
+      simple-grab-drop-zone="dropOnly: true;"
     ></a-entity>
 
     <a-box
@@ -147,7 +147,7 @@
       scale="0.3 0.3 0.3"
       position="0 0.25 1"
       clickable
-      @click="evt => grabTheThing(evt)"
+      simple-grab
     ></a-box>
 
     <a-box
@@ -156,7 +156,7 @@
       scale="0.3 0.3 0.3"
       position="0 0.25 -1"
       clickable
-      @click="evt => grabTheThing(evt)"
+      simple-grab
     ></a-box>
 
     <a-box
