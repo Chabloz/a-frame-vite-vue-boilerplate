@@ -36,7 +36,7 @@
 
     if (el.sceneEl.is('vr-mode')) {
       el.setAttribute('bind-position', 'target: #hand-right');
-      el.setAttribute('bind-rotation', 'target: #hand-right');
+      el.setAttribute('bind-rotation', 'target: #hand-right; convertToLocal: true');
     } else {
       el.setAttribute('bind-position', 'target: #dummy-hand-right');
       el.setAttribute('bind-rotation', 'target: #dummy-hand-right; convertToLocal: true');
@@ -116,7 +116,6 @@
       clickable
     ></a-entity>
 
-
     <a-entity
       id="drop-zone-left-spot"
       position="-1.8 1 -3.7"
@@ -142,7 +141,6 @@
       @click="evt => dropTheThing(evt)"
     ></a-entity>
 
-
     <a-box
       id="box-1-grabbable"
       color="red"
@@ -159,6 +157,15 @@
       position="0 0.25 -1"
       clickable
       @click="evt => grabTheThing(evt)"
+    ></a-box>
+
+    <a-box
+      id="box-3-grabbable"
+      color="blue"
+      scale="0.3 0.3 0.3"
+      position="0 0.25 -2"
+      clickable
+      simple-grab
     ></a-box>
 
     <PortalTeleporter

@@ -6,6 +6,8 @@
   import TheLifeCubeRoom from './TheLifeCubeRoom.vue';
   import ThePhysicRoom from './ThePhysicRoom.vue';
 
+  import '../aframe/simple-grab.js';
+
   defineProps({
     scale: Number,
     overlaySelector: String,
@@ -30,6 +32,7 @@
       useDefaultScene: false;
       wasmUrl: lib/physx.release.wasm;
     "
+    simple-grab
   >
 
     <a-assets @loaded="allAssetsLoaded = true">
