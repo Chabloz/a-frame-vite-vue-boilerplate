@@ -39,6 +39,10 @@
             </li>
           </ul>
         </section>
+        <section>
+          <h4>Source code</h4>
+          <blockquote><a href="https://github.com/Chabloz/a-frame-vite-vue-boilerplate">Github repo</a></blockquote>
+        </section>
         <dl>
           <dt>
             <i>Included</i>

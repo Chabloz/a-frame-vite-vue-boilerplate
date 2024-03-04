@@ -11,9 +11,9 @@ const fullReloadPlugin = {
 
 export default defineConfig(({ command, mode }) => {
   const config = {
-    base: "/aframe-grab/",
+    base: "/aframe-vue-boilerplate/",
     plugins: [
-      // basicSsl(),
+      basicSsl(),
       vue({
         template: {
           compilerOptions: {
