@@ -44,6 +44,22 @@ AFRAME.registerSystem('simple-grab', {
            this.dummyHandRight;
   },
 
+  getHand: function (evt) {
+    const cursor = evt.detail.cursorEl;
+    // for non vr cursor, test if the default left hand key is pressed to use the left hand
+    // otherwise use the right hand
+    if (cursor === this.nonVrCursor) {
+      return this.getDummyHand();
+    } else {
+      // for VR "hands" check if the cursor is in the left or right hand
+      const isLeftHand = cursor === this.leftHand;
+      const isRightHand = cursor === this.rightHand;
+      // if it's not a hand, return
+      if (!isLeftHand && !isRightHand) return null;
+      return cursor;
+    }
+  }
+
 });
 
 AFRAME.registerComponent('simple-grab', {
@@ -60,22 +76,11 @@ AFRAME.registerComponent('simple-grab', {
   },
 
   onEvent: function (evt) {
-    const cursor = evt.detail.cursorEl;
+    // if the event is not from a hand, return
+    this.grabbedBy = this.system.getHand(evt);
+    if (this.grabbedBy === null) return;
 
-    // for non vr cursor, test if the default left hand key is pressed to use the left hand
-    // otherwise use the right hand
-    if (cursor === this.system.nonVrCursor) {
-      this.grabbedBy = this.system.getDummyHand();
-    } else {
-      // for VR "hands" check if the cursor is in the left or right hand
-      const isLeftHand = cursor === this.system.leftHand;
-      const isRightHand = cursor === this.system.rightHand;
-      // if it's not a hand, return
-      if (!isLeftHand && !isRightHand) return;
-      this.grabbedBy = cursor;
-    }
-
-    // If something already grabbd, switch it
+    // If something already grabbed, switch it
     const currentGrab = this.system.getCurrentGrab(this.grabbedBy);
     if (currentGrab) {
       copyPosition(this.el, currentGrab);
@@ -84,7 +89,7 @@ AFRAME.registerComponent('simple-grab', {
       // if the object was in a drop zone, remove it from there
       // and add the grabbed object to the drop zone
       if (this.actualDropZone) {
-        currentGrab.actualDropZone = this.actualDropZone;
+        currentGrab.components['simple-grab'].actualDropZone = this.actualDropZone;
         this.actualDropZone.components['simple-grab-drop-zone'].droppedEl = currentGrab;
       }
     }
@@ -125,18 +130,9 @@ AFRAME.registerComponent('simple-grab-drop-zone', {
   },
 
   onEvent: function (evt) {
-    const cursor = evt.detail.cursorEl;
-
-    if (cursor === this.system.nonVrCursor) {
-      this.grabbedBy = this.system.getDummyHand();
-    } else {
-      // for VR "hands" check if the cursor is in the left or right hand
-      const isLeftHand = cursor === this.system.leftHand;
-      const isRightHand = cursor === this.system.rightHand;
-      // if it's not a hand, return
-      if (!isLeftHand && !isRightHand) return;
-      this.grabbedBy = cursor;
-    }
+    // if the event is not from a hand, return
+    this.grabbedBy = this.system.getHand(evt);
+    if (this.grabbedBy === null) return;
 
     const currentGrab = this.system.getCurrentGrab(this.grabbedBy);
 
