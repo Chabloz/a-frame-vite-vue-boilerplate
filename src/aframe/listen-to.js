@@ -12,8 +12,8 @@ AFRAME.registerComponent('listen-to', {
     this.data.target.addEventListener(this.data.event, this.onEvent);
   },
 
-  onEvent: function () {
-    this.el.emit(this.data.emit);
+  onEvent: function (evt) {
+    this.el.emit(this.data.emit, evt.detail);
   },
 
   update: function (oldData) {
