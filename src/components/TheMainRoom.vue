@@ -33,7 +33,6 @@
       geometry="primitive: plane; height: 2; width: 2;"
       position="2 2 3.9"
       rotation="-180 0 0"
-      alife-like-automaton="resolution: 64; maxGen: 30;  birthRule: 3,4,5,6,7; survivalRule: 5,6;"
       sakura-circle="resolution: 64;"
     ></a-entity>
 
