@@ -42,6 +42,7 @@
   >
 
     <a-text
+      v-if="label"
       align="center"
       :value="label"
       position="0 1.2 0"
