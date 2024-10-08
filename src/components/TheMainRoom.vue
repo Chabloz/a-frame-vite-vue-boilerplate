@@ -1,14 +1,12 @@
 <script setup>
   import { ref } from 'vue';
   import { randomHsl } from '../utils/color.js';
-  import { copyPosition, copyRotation } from '../utils/aframe.js';
 
   import BoxColorChanging from './BoxColorChanging.vue';
   import PortalTeleporter from './PortalTeleporter.vue';
   import ExitDoor from './ExitDoor.vue';
 
-  import '../aframe/bind-position.js';
-  import '../aframe/bind-rotation.js';
+  import '../aframe/listen-to.js';
 
   defineProps({
     scale: Number,
@@ -16,55 +14,6 @@
 
   const colorBoxLeft = ref(randomHsl());
   const colorBoxRight = ref(randomHsl());
-
-  function grabTheThing(evt) {
-    // if something already grabbed, switch it
-    const el = evt.target;
-    const grabbedEl = document.querySelector('[data-grabbed]');
-    if (grabbedEl) {
-      grabbedEl.removeAttribute('bind-position');
-      grabbedEl.removeAttribute('bind-rotation');
-      copyPosition(el, grabbedEl);
-      copyRotation(el, grabbedEl);
-      delete grabbedEl.dataset.grabbed;
-      delete grabbedEl.dataset.dropped;
-      if (el.dataset.dropped) {
-        grabbedEl.dataset.dropped = el.dataset.dropped;
-      }
-    }
-
-    if (el.sceneEl.is('vr-mode')) {
-      el.setAttribute('bind-position', 'target: #hand-right');
-      el.setAttribute('bind-rotation', 'target: #hand-right; convertToLocal: true');
-    } else {
-      el.setAttribute('bind-position', 'target: #dummy-hand-right');
-      el.setAttribute('bind-rotation', 'target: #dummy-hand-right; convertToLocal: true');
-    }
-    el.dataset.grabbed = true;
-    delete el.dataset.dropped;
-  }
-
-  function dropTheThing(evt) {
-    const grabbedEl = document.querySelector('[data-grabbed]');
-    // if nothing grabbed, return
-    if (!grabbedEl) return;
-
-    //drop it
-    grabbedEl.removeAttribute('bind-position');
-    grabbedEl.removeAttribute('bind-rotation');
-    copyPosition(evt.target, grabbedEl);
-    copyRotation(evt.target, grabbedEl);
-    delete grabbedEl.dataset.grabbed;
-
-    const dropZoneId = evt.target.id;
-    // if something was in the drop zone, grab it
-    const elInDropZone = document.querySelector(`[data-dropped="${dropZoneId}"]`);
-    if (elInDropZone) {
-      grabTheThing({ target: elInDropZone });
-    };
-
-    grabbedEl.dataset.dropped = dropZoneId;
-  }
 </script>
 
 <template>
@@ -108,22 +57,36 @@
 
     <a-entity
       id="drop-zone-left"
-      geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
+      geometry="primitive: sphere; phiLength: 180; radius: 0.52; thetaLength: 90;"
       material="color: red; side: double"
       position="-1.8 1 -4"
       rotation="90 0 0"
       clickable
-      @click="evt => dropTheThing(evt)"
+    ></a-entity>
+
+    <a-entity
+      id="drop-zone-left-spot"
+      position="-1.8 1 -3.7"
+      rotation="90 0 180"
+      listen-to="target: #drop-zone-left;"
+      simple-grab-drop-zone
     ></a-entity>
 
     <a-entity
       id="drop-zone-right"
-      geometry="primitive: sphere; phiLength: 180; radius: 0.5; thetaLength: 90;"
+      geometry="primitive: sphere; phiLength: 180; radius: 0.52; thetaLength: 90;"
       material="color: purple; side: double"
       position="-1.8 1 4"
       rotation="90 0 180"
       clickable
-      @click="evt => dropTheThing(evt)"
+    ></a-entity>
+
+    <a-entity
+      id="drop-zone-right-spot"
+      position="-1.8 1 3.7"
+      rotation="90 0 180"
+      listen-to="target: #drop-zone-right;"
+      simple-grab-drop-zone
     ></a-entity>
 
     <a-box
@@ -132,7 +95,7 @@
       scale="0.3 0.3 0.3"
       position="0 0.25 1"
       clickable
-      @click="evt => grabTheThing(evt)"
+      simple-grab
     ></a-box>
 
     <a-box
@@ -141,7 +104,7 @@
       scale="0.3 0.3 0.3"
       position="0 0.25 -1"
       clickable
-      @click="evt => grabTheThing(evt)"
+      simple-grab
     ></a-box>
 
     <PortalTeleporter
