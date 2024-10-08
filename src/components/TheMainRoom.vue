@@ -7,6 +7,8 @@
   import ExitDoor from './ExitDoor.vue';
 
   import '../aframe/listen-to.js';
+  import '../aframe/life-like-automaton.js';
+  import '../aframe/sakura-circle.js';
 
   defineProps({
     scale: Number,
@@ -18,17 +20,20 @@
 
 <template>
   <a-entity
+    id="main-room"
     gltf-model="#room"
     rotation="0 90 0"
     position="0 0 -5"
     scale="1 1.1 1"
+    listen-to="target: a-scene; event: enter-scene; emit: play-sound;"
+    sound="src: #sound-1; on: play-sound;"
   >
 
     <a-entity
       geometry="primitive: plane; height: 2; width: 2;"
       position="2 2 3.9"
       rotation="-180 0 0"
-      life-like-automaton="resolution: 64; maxGen: 30;  birthRule: 3,4,5,6,7; survivalRule: 5,6;"
+      sakura-circle="resolution: 64;"
     ></a-entity>
 
     <a-entity

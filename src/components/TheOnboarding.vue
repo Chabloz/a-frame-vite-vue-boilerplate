@@ -12,6 +12,7 @@
     if (AFRAME.utils.device.checkHeadsetConnected() && !AFRAME.utils.device.isMobile()) {
       document.querySelector('a-scene').enterVR();
     }
+    document.querySelector('a-scene').emit('enter-scene');
   }
 </script>
 
@@ -38,6 +39,10 @@
               click) + Gaze cursor for click
             </li>
           </ul>
+        </section>
+        <section>
+          <h4>Source code</h4>
+          <blockquote><a href="https://github.com/Chabloz/a-frame-vite-vue-boilerplate">Github repo</a></blockquote>
         </section>
         <dl>
           <dt>
