@@ -3,6 +3,7 @@
   import '../aframe/clickable.js';
   import '../aframe/multi-camera.js';
   import '../aframe/bind-rotation.js';
+  import '../aframe/look-at.js';
 
   import { ref } from 'vue';
 
@@ -48,6 +49,12 @@
       position="0 1.2 0"
     ></a-text>
 
+    <a-entity
+      v-if="cameraEffect"
+      :id="`portal-look-at-${id}`"
+      :look-at="`target: ${cameraSelector};`"
+    ></a-entity>
+
     <Teleport to="a-scene" v-if="cameraEffect">
       <a-entity :rotation="`0 ${cameraRot} 0`">
         <a-entity
@@ -60,7 +67,7 @@
             sequence: before;
           `"
           :position="`${cameraX} ${cameraY} ${cameraZ}`"
-          :bind-rotation="`target: ${cameraSelector};`"
+          :bind-rotation="`target: #portal-look-at-${id};`"
         ></a-entity>
       </a-entity>
     </Teleport>
