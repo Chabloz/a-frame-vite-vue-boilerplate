@@ -4,6 +4,7 @@
   import '../aframe/life-like-automaton.js';
   import '../aframe/physx-force-pushable.js';
   import '../aframe/clickable.js';
+import { camelize } from 'vue';
 </script>
 
 <template>
@@ -27,10 +28,14 @@
       material="src: #room-physic-out-texture"
       position="0 2.1 4.12"
       rotation="0 180 0"
-      :rot="0"
+      :rot="-90"
+      :z="1"
+      :x="-2.5"
       :cameraEffect="true"
       :cameraY="1.65"
-      :cameraRot="-180"
+      :cameraZ="-2.5"
+      :cameraX="-1"
+      :cameraRot="90"
     />
   </a-entity>
 
