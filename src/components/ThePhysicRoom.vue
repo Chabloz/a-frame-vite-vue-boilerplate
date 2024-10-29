@@ -4,7 +4,6 @@
   import '../aframe/life-like-automaton.js';
   import '../aframe/physx-force-pushable.js';
   import '../aframe/clickable.js';
-import { camelize } from 'vue';
 </script>
 
 <template>
