@@ -1,5 +1,5 @@
 <script setup>
-  import { ref } from 'vue';
+  import { ref, watch } from 'vue';
   import { randomHsl } from '../utils/color.js';
 
   import BoxColorChanging from './BoxColorChanging.vue';
@@ -16,6 +16,25 @@
 
   const colorBoxLeft = ref(randomHsl());
   const colorBoxRight = ref(randomHsl());
+
+  const droppedEl = ref(new Map());
+
+  watch(droppedEl, () => {
+    if (droppedEl.value.get('box-left-grabbable') !== 'drop-zone-left-spot') return;
+    if (droppedEl.value.get('box-right-grabbable') !== 'drop-zone-right-spot') return;
+    console.log('Both boxes are in the right spot!');
+  }, { deep: true });
+
+  function dropHandler(event) {
+    droppedEl.value.set(
+      event.detail.el.getAttribute('id'),
+      event.detail.dropZone.getAttribute('id')
+    );
+  }
+
+  function undropHandler(event) {
+    droppedEl.value.delete(event.detail.el.getAttribute('id'));
+  }
 </script>
 
 <template>
@@ -75,6 +94,8 @@
       rotation="90 0 180"
       listen-to="target: #drop-zone-left;"
       simple-grab-drop-zone
+      @drop="dropHandler($event)"
+      @undrop="undropHandler($event)"
     ></a-entity>
 
     <a-entity
@@ -92,10 +113,12 @@
       rotation="90 0 180"
       listen-to="target: #drop-zone-right;"
       simple-grab-drop-zone
+      @drop="dropHandler($event)"
+      @undrop="undropHandler($event)"
     ></a-entity>
 
     <a-box
-      id="box-1-grabbable"
+      id="box-left-grabbable"
       color="red"
       scale="0.3 0.3 0.3"
       position="0 0.25 1"
@@ -104,7 +127,7 @@
     ></a-box>
 
     <a-box
-      id="box-2-grabbable"
+      id="box-right-grabbable"
       color="purple"
       scale="0.3 0.3 0.3"
       position="0 0.25 -1"

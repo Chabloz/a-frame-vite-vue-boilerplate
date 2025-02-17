@@ -10,6 +10,9 @@ AFRAME.registerSystem('simple-grab', {
     dummyHandLeft: {type: 'selector', default: '#dummy-hand-left'},
     nonVrCursor: {type: 'selector', default: '[cursor]'},
     leftDummyHandKey: {type: 'string', default: 'ShiftLeft'},
+    grabEventName:  {type: 'string', default: 'grab'},
+    dropEventName:  {type: 'string', default: 'drop'},
+    undropEventName:  {type: 'string', default: 'undrop'},
   },
 
   init: function () {
@@ -28,14 +31,28 @@ AFRAME.registerSystem('simple-grab', {
 
   setCurrentGrab: function (hand, el) {
     this.currentGrab.set(hand, el);
+    // Emit the grab event on: the grabbed entity, the hand and the scene
+    el.emit(this.data.grabEventName, {hand, el});
+    hand.emit(this.data.grabEventName, {hand, el});
+    this.el.emit(this.data.grabEventName, {hand, el});
   },
 
   getCurrentGrab: function (hand) {
     return this.currentGrab.get(hand);
   },
 
-  removeCurrentGrab: function (hand) {
+  removeCurrentGrab: function (hand, el, dropZone) {
     this.currentGrab.set(hand, null);
+    // emit the drop event on: the grabbed entity, the hand, the scene and the drop zone (if any)
+    el.emit(this.data.dropEventName, {hand, el, dropZone});
+    hand.emit(this.data.dropEventName, {hand, el, dropZone});
+    if (dropZone) dropZone.emit(this.data.dropEventName, {hand, el, dropZone});
+    this.el.emit(this.data.dropEventName, {hand, el, dropZone});
+  },
+
+  removeFromDropZone: function (hand, el, dropZone) {
+    dropZone.emit(this.data.undropEventName, {hand, el, dropZone});
+    this.el.emit(this.data.undropEventName, {hand, el, dropZone});
   },
 
   getDummyHand: function () {
@@ -76,7 +93,7 @@ AFRAME.registerComponent('simple-grab', {
   },
 
   onEvent: function (evt) {
-    // if the event is not from a hand, return
+    // If the event is not from a hand, return
     this.grabbedBy = this.system.getHand(evt);
     if (this.grabbedBy === null) return;
 
@@ -86,17 +103,24 @@ AFRAME.registerComponent('simple-grab', {
       copyPosition(this.el, currentGrab);
       copyRotation(this.el, currentGrab);
       currentGrab.components['simple-grab'].grabbedBy = null;
-      // if the object was in a drop zone, remove it from there
+      // If the object was in a drop zone, remove it from there
       // and add the grabbed object to the drop zone
       if (this.actualDropZone) {
         currentGrab.components['simple-grab'].actualDropZone = this.actualDropZone;
         this.actualDropZone.components['simple-grab-drop-zone'].droppedEl = currentGrab;
+        this.system.removeCurrentGrab(this.grabbedBy, currentGrab, this.actualDropZone);
+      } else {
+        this.system.removeCurrentGrab(this.grabbedBy, currentGrab, null);
       }
     }
 
     this.system.setCurrentGrab(this.grabbedBy, this.el);
+
+    // If the object was grabbed from a drop zone, remove it from there
     if (this.actualDropZone) {
       if (!currentGrab) {
+        // if the drop zone is now empty, trigger an undrop event
+        this.system.removeFromDropZone(this.grabbedBy, this.actualDropZone.components['simple-grab-drop-zone'].droppedEl, this.actualDropZone);
         this.actualDropZone.components['simple-grab-drop-zone'].droppedEl = null;
       }
       this.actualDropZone = null;
@@ -143,7 +167,7 @@ AFRAME.registerComponent('simple-grab-drop-zone', {
     if (currentGrab) {
       currentGrab.components['simple-grab'].grabbedBy = null;
       currentGrab.components['simple-grab'].actualDropZone = this.el;
-      this.system.removeCurrentGrab(this.grabbedBy);
+      this.system.removeCurrentGrab(this.grabbedBy, currentGrab, this.el);
       copyPosition(this.el, currentGrab);
       copyRotation(this.el, currentGrab, true);
       if (this.data.dropOnly) currentGrab.removeAttribute('simple-grab');
@@ -154,7 +178,10 @@ AFRAME.registerComponent('simple-grab-drop-zone', {
       this.system.setCurrentGrab(this.grabbedBy, this.droppedEl);
       this.droppedEl.components['simple-grab'].grabbedBy = this.grabbedBy;
       this.droppedEl.components['simple-grab'].actualDropZone = null;
+      const oldDroppedEl = this.droppedEl;
       this.droppedEl = null;
+      // if the drop zone is now empty, trigger an undrop event
+      if (!currentGrab) this.system.removeFromDropZone(this.grabbedBy, oldDroppedEl, this.el);
     }
 
     if (currentGrab) this.droppedEl = currentGrab;
