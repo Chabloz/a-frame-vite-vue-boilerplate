@@ -8,6 +8,7 @@
   import '../aframe/listen-to.js';
   import '../aframe/simple-grab.js';
   import '../aframe/clickable.js';
+  import '../aframe/im-box.js';
 
   const allAssetsLoaded = ref(false);
 
@@ -55,6 +56,8 @@
         visible="true"
         event-set="event: obbcollisionstarted; attribute: visible; value: false"
       ></a-box>
+
+      <a-entity imbox position="0 3 -3" scale="2 2 2"></a-entity>
 
       <a-box
         obb-collider
