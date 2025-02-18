@@ -9,6 +9,7 @@
   import '../aframe/simple-grab.js';
   import '../aframe/clickable.js';
   import '../aframe/im-box.js';
+  import '../aframe/mat-change-color.js';
 
   const allAssetsLoaded = ref(false);
 
@@ -60,6 +61,7 @@
       <a-entity imbox position="0 3 -3" scale="2 2 2"></a-entity>
 
       <a-box
+        mat-change-color
         obb-collider
         id="power"
         position="2 0 -3"
