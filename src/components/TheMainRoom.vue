@@ -44,8 +44,6 @@
     rotation="0 90 0"
     position="0 0 -5"
     scale="1 1.1 1"
-    listen-to="target: a-scene; event: enter-scene; emit: play-sound;"
-    sound="src: #sound-1; on: play-sound;"
   >
 
     <a-entity
