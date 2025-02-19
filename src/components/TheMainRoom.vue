@@ -119,7 +119,7 @@
 
     <a-box
       id="box-left-grabbable"
-      color="red"
+      color="tomato"
       scale="0.3 0.3 0.3"
       position="0 0.25 1"
       clickable
