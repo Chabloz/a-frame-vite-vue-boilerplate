@@ -3,10 +3,10 @@
 </p>
 <h1 align="center">Vue + A-Frame + Vite boilerplate</h1>
 
-> A boilerplate for A-Frame 1.6, Vue 3.5 and Vite 5.0
+> A boilerplate for A-Frame 1.7, Vue 3.5 and Vite 5.4
 
 ![Vue.js](https://img.shields.io/badge/vuejs-%2335495e.svg?style=for-the-badge&logo=vuedotjs&logoColor=%234FC08D)
-![A-Frame](https://img.shields.io/badge/A%E2%80%93Frame-1.6-brightgreen?style=for-the-badge&labelColor=%23ef2d5e&color=%23ef2d5e)
+![A-Frame](https://img.shields.io/badge/A%E2%80%93Frame-1.7-brightgreen?style=for-the-badge&labelColor=%23ef2d5e&color=%23ef2d5e)
 ![Threejs](https://img.shields.io/badge/threejs-black?style=for-the-badge&logo=three.js&logoColor=white)
 ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
 
