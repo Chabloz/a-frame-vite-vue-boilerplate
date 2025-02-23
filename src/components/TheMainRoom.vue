@@ -121,6 +121,7 @@
       scale="0.3 0.3 0.3"
       position="0 0.25 1"
       clickable
+      outline-on-event
       simple-grab
     ></a-box>
 
@@ -130,6 +131,7 @@
       scale="0.3 0.3 0.3"
       position="0 0.25 -1"
       clickable
+      outline-on-event
       simple-grab
     ></a-box>
 

@@ -26,6 +26,7 @@ export default defineConfig(({ command, mode }) => {
     ],
     resolve: {
       alias: {
+        "three": "/src/three.js",
         "@": "/src",
       },
     },

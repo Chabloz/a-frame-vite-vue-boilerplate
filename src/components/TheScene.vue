@@ -7,6 +7,7 @@
   import ThePhysicRoom from './ThePhysicRoom.vue';
 
   import '../aframe/simple-grab.js';
+  import '../aframe/outline.js';
 
   defineProps({
     scale: Number,
@@ -32,6 +33,7 @@
       useDefaultScene: false;
       wasmUrl: lib/physx.release.wasm;
     "
+    outline
     simple-grab
   >
 
