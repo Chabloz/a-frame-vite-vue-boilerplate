@@ -56,6 +56,8 @@
       <img id="room-physic-out-texture" :src="`assets/main-room-from-physic-room.png`">
       <img id="room-gol-out-texture" :src="`assets/main-room-from-gol-room.png`">
       <img id="room-physic-texture" :src="`assets/physicRoom.png`">
+      <img id="wall-rock" :src="`assets/rock_wall.jpg`">
+
     </a-assets>
 
     <template v-if="allAssetsLoaded">

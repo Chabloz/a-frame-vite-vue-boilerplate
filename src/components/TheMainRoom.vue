@@ -46,6 +46,8 @@
     scale="1 1.1 1"
   >
 
+    <a-plane color="green" rotation="0 -90 0"></a-plane>
+
     <a-entity
       geometry="primitive: plane; height: 2; width: 2;"
       position="2 2 3.9"
