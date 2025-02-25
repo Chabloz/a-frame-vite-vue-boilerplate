@@ -15,6 +15,7 @@
 
       <a-entity
         id="head"
+        track-me="target: #box-right-grabbable;"
         look-controls="pointerLockEnabled: true"
         simple-navmesh-constraint="navmesh: [data-role='nav-mesh']; height: 1.65;"
         disable-in-vr="component: simple-navmesh-constraint;"

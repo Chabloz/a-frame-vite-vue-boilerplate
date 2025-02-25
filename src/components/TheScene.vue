@@ -8,6 +8,7 @@
 
   import '../aframe/simple-grab.js';
   import '../aframe/outline.js';
+  import '../aframe/track-me.js';
 
   defineProps({
     scale: Number,
