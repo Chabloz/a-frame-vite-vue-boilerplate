@@ -97,8 +97,12 @@ AFRAME.registerComponent('simple-grab', {
     this.grabbedBy = this.system.getHand(evt);
     if (this.grabbedBy === null) return;
 
-    // If something already grabbed, switch it
+
     const currentGrab = this.system.getCurrentGrab(this.grabbedBy);
+    // Do nothing if the object is already grabbed by the same hand
+    if (currentGrab === this.el) return;
+
+    // If something already grabbed, switch it
     if (currentGrab) {
       copyPosition(this.el, currentGrab);
       copyRotation(this.el, currentGrab);
@@ -119,7 +123,7 @@ AFRAME.registerComponent('simple-grab', {
     // If the object was grabbed from a drop zone, remove it from there
     if (this.actualDropZone) {
       if (!currentGrab) {
-        // if the drop zone is now empty, trigger an undrop event
+        // The drop zone is now empty, trigger an undrop event
         this.system.removeFromDropZone(this.grabbedBy, this.actualDropZone.components['simple-grab-drop-zone'].droppedEl, this.actualDropZone);
         this.actualDropZone.components['simple-grab-drop-zone'].droppedEl = null;
       }
