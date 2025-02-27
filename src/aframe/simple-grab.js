@@ -29,6 +29,7 @@ AFRAME.registerSystem('simple-grab', {
     this.currentGrab.set(this.dummyHandLeft, null);
     this.currentGrab.set(this.dummyHandRight, null);
     this.isGrabInProgress = false;
+    this.timerGrabInProgress = null;
 
     if (this.data.allowMidAirDrop) {
       this.onSceneClick = this.onSceneClick.bind(this);
@@ -126,9 +127,6 @@ AFRAME.registerComponent('simple-grab', {
   },
 
   onEvent: function (evt) {
-    this.system.isGrabInProgress = true;
-    setTimeout(() => this.system.isGrabInProgress = false, 400);
-
     // If the event is not from a hand, return
     this.grabbedBy = this.system.getHand(evt);
     if (this.grabbedBy === null) return;
@@ -136,6 +134,10 @@ AFRAME.registerComponent('simple-grab', {
     const currentGrab = this.system.getCurrentGrab(this.grabbedBy);
     // Do nothing if the object is already grabbed by the same hand
     if (currentGrab === this.el) return;
+
+    this.system.isGrabInProgress = true;
+    if (this.system.timerGrabInProgress) clearTimeout(this.system.timerGrabInProgress);
+    this.system.timerGrabInProgress = setTimeout(() => this.system.isGrabInProgress = false, 500);
 
     // If something already grabbed, switch it
     if (currentGrab) {
@@ -193,9 +195,6 @@ AFRAME.registerComponent('simple-grab-drop-zone', {
   },
 
   onEvent: function (evt) {
-    this.system.isGrabInProgress = true;
-    setTimeout(() => this.system.isGrabInProgress = false, 400);
-
     // if the event is not from a hand, return
     this.grabbedBy = this.system.getHand(evt);
     if (this.grabbedBy === null) return;
@@ -204,6 +203,10 @@ AFRAME.registerComponent('simple-grab-drop-zone', {
 
     // disallow dropping if the drop zone is already occupied
     if (this.data.dropOnly && this.droppedEl !== null) return;
+
+    this.system.isGrabInProgress = true;
+    if (this.system.timerGrabInProgress) clearTimeout(this.system.timerGrabInProgress);
+    this.system.timerGrabInProgress = setTimeout(() => this.system.isGrabInProgress = false, 500);
 
     // drop the current grab
     if (currentGrab) {
