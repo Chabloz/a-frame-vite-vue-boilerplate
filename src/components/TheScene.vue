@@ -34,7 +34,7 @@
       wasmUrl: lib/physx.release.wasm;
     "
     outline
-    simple-grab
+    simple-grab="allowMidAirDrop: true;"
   >
 
     <a-assets @loaded="allAssetsLoaded = true">

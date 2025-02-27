@@ -43,15 +43,15 @@ AFRAME.registerSystem('simple-grab', {
 
   onSceneClick: function (evt) {
     const hand = this.getDummyHand();
-    setTimeout(() => this.dropMidAir(hand), 100);
+    setTimeout(() => this.dropMidAir(hand), 200);
   },
 
   onLeftHandTrigger: function (evt) {
-    setTimeout(() => this.dropMidAir(this.leftHand), 100);
+    setTimeout(() => this.dropMidAir(this.leftHand), 200);
   },
 
   onRightHandTrigger: function (evt) {
-    setTimeout(() => this.dropMidAir(this.rightHand), 100);
+    setTimeout(() => this.dropMidAir(this.rightHand), 200);
   },
 
   dropMidAir: function (hand) {
@@ -127,7 +127,7 @@ AFRAME.registerComponent('simple-grab', {
 
   onEvent: function (evt) {
     this.system.isGrabInProgress = true;
-    setTimeout(() => this.system.isGrabInProgress = false, 300);
+    setTimeout(() => this.system.isGrabInProgress = false, 400);
 
     // If the event is not from a hand, return
     this.grabbedBy = this.system.getHand(evt);
@@ -194,7 +194,7 @@ AFRAME.registerComponent('simple-grab-drop-zone', {
 
   onEvent: function (evt) {
     this.system.isGrabInProgress = true;
-    setTimeout(() => this.system.isGrabInProgress = false, 300);
+    setTimeout(() => this.system.isGrabInProgress = false, 400);
 
     // if the event is not from a hand, return
     this.grabbedBy = this.system.getHand(evt);
