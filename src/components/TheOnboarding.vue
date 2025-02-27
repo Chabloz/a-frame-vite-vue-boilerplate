@@ -49,7 +49,7 @@
             <i>Included</i>
           </dt>
           <dt>
-            <a href="https://github.com/c-frame/aframe-extras" target="_blank">aframe-extras controls and animation-mixer</a>
+            <a href="https://github.com/c-frame/aframe-extras" target="_blank">aframe-extras</a>
           </dt><dd>
             <a href="https://github.com/c-frame/aframe-extras/blob/master/LICENSE" target="_blank">MIT License</a>
           </dd>
