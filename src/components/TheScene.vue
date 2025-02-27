@@ -8,6 +8,7 @@
 
   import '../aframe/simple-grab.js';
   import '../aframe/outline.js';
+  import '../aframe/super-keyboard.js';
 
   defineProps({
     scale: Number,

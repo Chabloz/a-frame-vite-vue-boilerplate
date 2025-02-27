@@ -47,6 +47,21 @@
   >
 
     <a-entity
+      id="keyboard"
+      super-keyboard="
+        hand: [cursor];
+        filters: numbers;
+        model: numpad;
+        align: center;
+        maxLength: 4;
+        multipleInputs: true;
+      "
+      @superkeyboardinput="console.log($event.detail)"
+      position="-3 1 0"
+      rotation="-30 -90 0"
+    ></a-entity>
+
+    <a-entity
       geometry="primitive: plane; height: 2; width: 2;"
       position="2 2 3.9"
       rotation="-180 0 0"
