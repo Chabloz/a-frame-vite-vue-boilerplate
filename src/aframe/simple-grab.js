@@ -47,12 +47,10 @@ AFRAME.registerSystem('simple-grab', {
   },
 
   onLeftHandTrigger: function (evt) {
-    // this.dropMidAir(this.leftHand);
     setTimeout(() => this.dropMidAir(this.leftHand), 100);
   },
 
   onRightHandTrigger: function (evt) {
-    // this.dropMidAir(this.rightHand);
     setTimeout(() => this.dropMidAir(this.rightHand), 100);
   },
 
@@ -78,7 +76,7 @@ AFRAME.registerSystem('simple-grab', {
 
   removeCurrentGrab: function (hand, el, dropZone) {
     this.currentGrab.set(hand, null);
-    // emit the drop event on: the grabbed entity, the hand, the scene and the drop zone (if any)
+    // Emit the drop event on: the grabbed entity, the hand, the scene and the drop zone (if any)
     el.emit(this.data.dropEventName, {hand, el, dropZone});
     hand.emit(this.data.dropEventName, {hand, el, dropZone});
     if (dropZone) dropZone.emit(this.data.dropEventName, {hand, el, dropZone});
