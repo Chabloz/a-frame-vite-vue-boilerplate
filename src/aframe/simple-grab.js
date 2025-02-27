@@ -4,6 +4,7 @@ import Keyboard from '../utils/keyboard.js';
 
 AFRAME.registerSystem('simple-grab', {
   schema: {
+    allowMidAirDrop: {type: 'boolean', default: false},
     handRight: {type: 'selector', default: '#hand-right'},
     handLeft: {type: 'selector', default: '#hand-left'},
     dummyHandRight: {type: 'selector', default: '#dummy-hand-right'},
@@ -27,6 +28,40 @@ AFRAME.registerSystem('simple-grab', {
     this.currentGrab.set(this.rightHand, null);
     this.currentGrab.set(this.dummyHandLeft, null);
     this.currentGrab.set(this.dummyHandRight, null);
+    this.isGrabInProgress = false;
+
+    if (this.data.allowMidAirDrop) {
+      this.onSceneClick = this.onSceneClick.bind(this);
+      this.onLeftHandTrigger = this.onLeftHandTrigger.bind(this);
+      this.onRightHandTrigger = this.onRightHandTrigger.bind(this);
+      document.addEventListener('click', this.onSceneClick);
+      // For VR, listen to the controller trigger events
+      this.leftHand.addEventListener('triggerdown', this.onLeftHandTrigger);
+      this.rightHand.addEventListener('triggerdown', this.onRightHandTrigger);
+    }
+  },
+
+  onSceneClick: function (evt) {
+    const hand = this.getDummyHand();
+    setTimeout(() => this.dropMidAir(hand), 100);
+  },
+
+  onLeftHandTrigger: function (evt) {
+    // this.dropMidAir(this.leftHand);
+    setTimeout(() => this.dropMidAir(this.leftHand), 100);
+  },
+
+  onRightHandTrigger: function (evt) {
+    // this.dropMidAir(this.rightHand);
+    setTimeout(() => this.dropMidAir(this.rightHand), 100);
+  },
+
+  dropMidAir: function (hand) {
+    if (this.isGrabInProgress) return;
+    const currentGrab = this.getCurrentGrab(hand);
+    if (currentGrab === null) return;
+    this.removeCurrentGrab(hand, currentGrab, null);
+    currentGrab.components['simple-grab'].grabbedBy = null;
   },
 
   setCurrentGrab: function (hand, el) {
@@ -93,10 +128,12 @@ AFRAME.registerComponent('simple-grab', {
   },
 
   onEvent: function (evt) {
+    this.system.isGrabInProgress = true;
+    setTimeout(() => this.system.isGrabInProgress = false, 300);
+
     // If the event is not from a hand, return
     this.grabbedBy = this.system.getHand(evt);
     if (this.grabbedBy === null) return;
-
 
     const currentGrab = this.system.getCurrentGrab(this.grabbedBy);
     // Do nothing if the object is already grabbed by the same hand
@@ -158,6 +195,9 @@ AFRAME.registerComponent('simple-grab-drop-zone', {
   },
 
   onEvent: function (evt) {
+    this.system.isGrabInProgress = true;
+    setTimeout(() => this.system.isGrabInProgress = false, 300);
+
     // if the event is not from a hand, return
     this.grabbedBy = this.system.getHand(evt);
     if (this.grabbedBy === null) return;
