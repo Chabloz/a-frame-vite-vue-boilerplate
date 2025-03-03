@@ -4,6 +4,7 @@ AFRAME.registerComponent('clickable', {
   },
 
   init: function () {
+    this.cursor = null;
     this.onEnter = this.onEnter.bind(this);
     this.onLeave = this.onLeave.bind(this);
     this.el.addEventListener('mouseenter', this.onEnter);
@@ -11,26 +12,27 @@ AFRAME.registerComponent('clickable', {
   },
 
   onEnter: function (evt) {
-    const cursor = evt.detail.cursorEl;
-    if (cursor.getAttribute('raycaster').showLine) {
-      this.savedColor = cursor.getAttribute('raycaster').lineColor;
-      cursor.setAttribute('raycaster', 'lineColor', this.data.color);
-    } else {
-      this.savedColor = cursor.getAttribute('material').color;
-      cursor.setAttribute('material', 'color', this.data.color);
-    }
+    this.cursor = evt.detail.cursorEl;
+    this.changeCursorColor(this.data.color, true);
   },
 
   onLeave: function (evt) {
-    const cursor = evt.detail.cursorEl;
-    if (cursor.getAttribute('raycaster').showLine) {
-      cursor.setAttribute('raycaster', 'lineColor', this.savedColor);
+    this.cursor = evt.detail.cursorEl;
+    this.changeCursorColor(this.savedColor);
+  },
+
+  changeCursorColor: function (color, saveLast = false) {
+    if (this.cursor.getAttribute('raycaster').showLine) {
+      if (saveLast) this.savedColor = this.cursor.getAttribute('raycaster').lineColor;
+      this.cursor.setAttribute('raycaster', 'lineColor', color);
     } else {
-      cursor.setAttribute('material', 'color', this.savedColor);
+      if (saveLast) this.savedColor = this.cursor.getAttribute('material').color;
+      this.cursor.setAttribute('material', 'color', color);
     }
   },
 
   remove: function () {
+    this.changeCursorColor(this.savedColor);
     this.el.removeEventListener('mouseenter', this.onEnter);
     this.el.removeEventListener('mouseleave', this.onLeave);
   },
