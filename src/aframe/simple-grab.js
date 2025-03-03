@@ -5,6 +5,7 @@ import Keyboard from '../utils/keyboard.js';
 AFRAME.registerSystem('simple-grab', {
   schema: {
     allowMidAirDrop: {type: 'boolean', default: false},
+    reparenting: {type: 'boolean', default: false},
     handRight: {type: 'selector', default: '#hand-right'},
     handLeft: {type: 'selector', default: '#hand-left'},
     dummyHandRight: {type: 'selector', default: '#dummy-hand-right'},
@@ -22,6 +23,8 @@ AFRAME.registerSystem('simple-grab', {
     this.dummyHandLeft = this.data.dummyHandLeft;
     this.dummyHandRight = this.data.dummyHandRight;
     this.nonVrCursor = this.data.nonVrCursor;
+    this.reparenting = this.data.reparenting;
+
     this.keyboard = new Keyboard();
     this.currentGrab = new Map();
     this.currentGrab.set(this.leftHand, null);
@@ -30,6 +33,7 @@ AFRAME.registerSystem('simple-grab', {
     this.currentGrab.set(this.dummyHandRight, null);
     this.isGrabInProgress = false;
     this.timerGrabInProgress = null;
+
 
     if (this.data.allowMidAirDrop) {
       this.onSceneClick = this.onSceneClick.bind(this);
@@ -65,6 +69,16 @@ AFRAME.registerSystem('simple-grab', {
 
   setCurrentGrab: function (hand, el) {
     this.currentGrab.set(hand, el);
+    // reparent the object to the hand
+    if (this.reparenting) {
+      // remove the el from its parent
+      const parent = el.parentNode;
+      if (parent) parent.removeChild(el);
+      copyPosition(hand, el);
+      copyRotation(hand, el);
+      // append the el to the hand
+      hand.appendChild(el);
+    }
     // Emit the grab event on: the grabbed entity, the hand and the scene
     el.emit(this.data.grabEventName, {hand, el});
     hand.emit(this.data.grabEventName, {hand, el});
@@ -174,6 +188,7 @@ AFRAME.registerComponent('simple-grab', {
 
   tick: function () {
     if (!this.grabbedBy) return;
+    if (this.system.reparenting) return;
     copyPosition(this.grabbedBy, this.el);
     copyRotation(this.grabbedBy, this.el, true);
   }

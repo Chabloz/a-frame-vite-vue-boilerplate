@@ -174,7 +174,7 @@
     rotation="-90 0 0"
     data-role="nav-mesh"
     material="color: blue"
-    visible="false"
+    visible="true"
   ></a-entity>
   <a-entity
     geometry="primitive: plane; height: .5; width: 5"
@@ -182,7 +182,7 @@
     rotation="-90 0 0"
     data-role="nav-mesh"
     material="color: red"
-    visible="false"
+    visible="true"
   ></a-entity>
 
 </template>

@@ -34,7 +34,8 @@
       wasmUrl: lib/physx.release.wasm;
     "
     outline
-    simple-grab
+    simple-grab="reparenting: true;"
+    stats
   >
 
     <a-assets @loaded="allAssetsLoaded = true">
