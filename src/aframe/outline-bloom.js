@@ -101,7 +101,7 @@ AFRAME.registerComponent('outline-bloom', {
     this.composer.addPass(this.outlinePass);
 
     this.outlinePass.selectedObjects = this.getAllObjectsToOutline();
-    // this.outlinePass.renderToScreen = true;
+    this.outlinePass.renderToScreen = true;
     this.outlinePass.edgeStrength = this.data.strength;
     this.outlinePass.edgeGlow = this.data.glow;
     this.outlinePass.visibleEdgeColor.set(this.data.color);
