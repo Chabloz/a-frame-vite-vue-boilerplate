@@ -59,6 +59,30 @@ AFRAME.registerComponent('outline', {
     this.outputPass = null;
     this.composer = null;
     this.bind();
+
+    this.observer = new MutationObserver((mutationsList, observer) => {
+      for (let mutation of mutationsList) {
+        if (mutation.type != 'attributes' || mutation.attributeName != 'class') return;
+        if (document.body.classList.contains('aframe-inspector')) {
+          this.setCamera(AFRAME.INSPECTOR.camera);
+        } else {
+          this.setCamera(this.el.camera);
+        }
+      }
+    });
+    this.observer.observe(document.body, { attributes: true });
+    this.setCameraFromEvt = this.setCameraFromEvt.bind(this);
+    this.el.addEventListener('camera-set-active', this.setCameraFromEvt);
+  },
+
+  setCameraFromEvt: function (event) {
+    this.setCamera(event.detail.cameraEl);
+  },
+
+  setCamera: function (camera) {
+    if (this.camera == camera) return;
+    this.camera = camera;
+    this.update({});
   },
 
   update: function (oldData) {
@@ -69,7 +93,6 @@ AFRAME.registerComponent('outline', {
     if (oldData.enabled === true && this.data.enabled === false) {
       this.el.renderer.render = this.originalRender;
     }
-
 
     if (this.composer) this.composer.dispose();
 
@@ -136,6 +159,8 @@ AFRAME.registerComponent('outline', {
   },
 
   remove: function () {
+    this.el.removeEventListener('camera-set-active', this.setCameraFromEvt);
+    this.observer.disconnect();
     this.el.renderer.render = this.originalRender;
     this.outlinePass.dispose();
     this.outputPass.dispose();
