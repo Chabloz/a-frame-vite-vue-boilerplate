@@ -30,12 +30,11 @@ SOFTWARE.
  *
  * Based on an original component by Don McCurdy in aframe-physics-system
  *
+ * 2026 Nicolas Chabloz: Test if the entity has a physx-grabbable attribute before grabbing it.
+ *
  * Copyright (c) 2016 Don McCurdy
- *
- * 2024 Nicolas Chabloz modification: Test if the entity has a physx-grabbable attribute before grabbing it.
- *
- * Requires: physx
  */
+
 AFRAME.registerComponent('physx-grab', {
   init: function () {
 
@@ -48,7 +47,6 @@ AFRAME.registerComponent('physx-grab', {
 
     this.grabbing = false;
     this.hitEl =      /** @type {AFRAME.Element}    */ null;
-    this.physics =    /** @type {AFRAME.System}     */ this.el.sceneEl.systems.physics;
 
     // Bind event handlers
     this.onHit = this.onHit.bind(this);
@@ -95,9 +93,9 @@ AFRAME.registerComponent('physx-grab', {
   },
 
   onHit: function (evt) {
-    var hitEl = evt.detail.otherComponent.el;
+    var hitEl = evt.detail.otherComponent?.el;
     if (!hitEl.hasAttribute('physx-grabbable')) return;
-
+    if (hitEl && hitEl.components['physx-body'].data.type === 'static') return;
     // If the element is already grabbed (it could be grabbed by another controller).
     // If the hand is not grabbing the element does not stick.
     // If we're already grabbing something you can't grab again.
