@@ -50,7 +50,6 @@
           snapTurn: false;
         "
         position="0 1.5 0"
-        physx-grab
       >
         <a-sphere id="hand-left-collider"
           radius="0.02"
@@ -65,7 +64,6 @@
         laser-controls="hand: right"
         raycaster="far: 4; objects: [clickable]; showLine: true;"
         position="0 1.5 0"
-        physx-grab
       >
         <a-sphere id="hand-right-collider"
           radius="0.02"
