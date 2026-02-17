@@ -1,6 +1,7 @@
 <script setup>
   import '../aframe/duplicate';
-  import '../aframe/look-at';
+
+
 
 </script>
 
@@ -13,7 +14,6 @@
       amplitude-variance="0.1"
       opacity="1"
       density="50"
-      look-at
     ></a-ocean>
     <a-box duplicate></a-box>
     <a-entity light="type: ambient; color: #445451"></a-entity>
