@@ -54,8 +54,7 @@
         <a-sphere id="hand-left-collider"
           radius="0.02"
           visible="false"
-          physx-body="type: kinematic; emitCollisionEvents: true">
-        </a-sphere>
+        ></a-sphere>
       </a-entity>
 
       <a-entity
@@ -68,8 +67,7 @@
         <a-sphere id="hand-right-collider"
           radius="0.02"
           visible="false"
-          physx-body="type: kinematic; emitCollisionEvents: true">
-        </a-sphere>
+        ></a-sphere>
       </a-entity>
 
   </a-entity>
