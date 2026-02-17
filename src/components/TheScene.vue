@@ -12,15 +12,16 @@ import TheOcean from './TheOcean.vue';
 <template>
   <a-scene
     background="color: #a3d0ed"
-    fog="type: linear; color: #a3d0ed; near: 30; far: 60"
+    _fog="type: linear; color: #a3d0ed; near: 30; far: 60"
   >
 
     <a-assets @loaded="allAssetsLoaded = true">
-
+      <img id="sky-texture" :src="`assets/citrus_orchard_road_puresky.jpg`">
     </a-assets>
 
     <template v-if="allAssetsLoaded">
       <TheOcean></TheOcean>
+      <a-sky src="#sky-texture"></a-sky>
     </template>
 
     <TheCameraRig />
