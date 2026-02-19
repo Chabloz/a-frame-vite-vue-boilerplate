@@ -31,8 +31,8 @@
       ></a-sky>
 
       <a-entity
-        position="0 -.5 -15"
-        duplicate="gltf: #hill-glb; entropy: 0.75; gap: 0.2; rows: 5; cols: 5;"
+        position="0 -.5 -12"
+        duplicate="gltf: #hill-glb; entropy: 2; gap: 0.2; rows: 5; cols: 5;"
         gltf-model="#hill-glb"
         scale="0.5 0.5 0.5"
       ></a-entity>
