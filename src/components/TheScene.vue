@@ -5,7 +5,7 @@
   import TheCameraRig from './TheCameraRig.vue';
   import TheOcean from './TheOcean.vue';
 
-  import '../aframe/hexagon-tessellation.js';
+  import '../aframe/my-hexagon-tessellation.js';
   import '../aframe/bloom.js';
   import '../aframe/duplicate.js';
 
@@ -30,22 +30,24 @@
         material="fog: false"
       ></a-sky>
 
-      <a-entity
-        position="0 -.5 -12"
-        duplicate="gltf: #hill-glb; entropy: 2; gap: 0.2; rows: 5; cols: 5;"
-        gltf-model="#hill-glb"
-        scale="0.5 0.5 0.5"
-      ></a-entity>
+
 
       <TheOcean></TheOcean>
 
       <a-entity data-role="nav-mesh">
-        <hexagon-tessellation
+        <a-entity
+          position="0 -.5 -6.5"
+          duplicate="gltf: #hill-glb; entropy: 1; gap: 0; rows: 5; cols: 5;"
+          gltf-model="#hill-glb"
+          scale="0.35 0.35 0.35"
+        ></a-entity>
+
+        <my-hexagon-tessellation
           position="0 -0.1 0"
           radius="4"
           height="0.5"
           color-entropy="0.5"
-        ></hexagon-tessellation>
+        ></my-hexagon-tessellation>
 
         <a-box
           position="7 -0.1 0"
