@@ -14,7 +14,6 @@ AFRAME.registerComponent('my-hexagon', {
     color: {type: 'color', default: 'tomato'},
   },
   init: function () {
-    console.log('Creating hexagon with radius', this.data.radius);
     this.createVertices();
     this.createShape();
     this.createGeometry();

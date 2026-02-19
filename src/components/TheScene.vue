@@ -6,9 +6,9 @@
   import TheOcean from './TheOcean.vue';
 
   import '../aframe/my-hexagon.js';
+  import '../aframe/bloom.js';
 
   const allAssetsLoaded = ref(false);
-  const color = ref('tomato');
 
   setTimeout(() => {
     document.querySelector('my-hexagon').setAttribute('color', 'cyan');
@@ -18,8 +18,8 @@
 <template>
   <a-scene
     background="color: #a3d0ed"
-    a_fog="type: linear; color: #abd0ed; near: 30; far: 100"
-    stats
+    fog="type: linear; color: #abd0ed; near: 30; far: 100"
+    abloom
   >
 
     <a-assets @loaded="allAssetsLoaded = true">
@@ -28,8 +28,8 @@
     </a-assets>
 
     <template v-if="allAssetsLoaded">
-      <!-- <TheOcean></TheOcean>
-      <a-sky src="#sky-texture" material="fog: false"></a-sky> -->
+      <TheOcean></TheOcean>
+      <a-sky src="#sky-texture" material="fog: false"></a-sky>
       <my-hexagon position="0 4 -4" radius="2"></my-hexagon>
     </template>
 

@@ -18,7 +18,7 @@ export default defineConfig(({ command, mode }) => {
         template: {
           compilerOptions: {
             // Allow A-Frame elements to be in Vue template
-            isCustomElement: (tag) => tag.startsWith("a-"),
+            isCustomElement: (tag) => tag.startsWith("a-") || tag.startsWith("my-"),
           },
         },
       }),

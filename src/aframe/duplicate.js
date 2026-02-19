@@ -1,10 +1,13 @@
 
+import { getRandomFloat } from '../utils/math.js';
+
 AFRAME.registerComponent('duplicate', {
   schema: {
     rows: {type: 'number', default: 2},
     cols: {type: 'number', default: 2},
-    gap: {type: 'number', default: 5},
+    gap: {type: 'number', default: 0.1},
     gltf: {type: 'string', default: ''},
+    entropy: {type: 'number', default: 0},
   },
 
   init: function () {
@@ -12,13 +15,25 @@ AFRAME.registerComponent('duplicate', {
     this.parent = document.createElement('a-entity');
     this.clone0 = this.target.cloneNode(true);
     this.clone0.removeAttribute('duplicate');
-    // get the bouding box of the original model to get width and depth for the gap
+
+    if (this.data.gltf) {
+      this.target.addEventListener('model-loaded', () => {
+        this.calculateBoundingBox();
+        this.target.removeAttribute('gltf-model');
+        this.createDuplicates();
+      }, {once: true});
+    } else {
+      this.calculateBoundingBox();
+      this.createDuplicates();
+    }
+  },
+
+  calculateBoundingBox: function () {
     const box = new THREE.Box3().setFromObject(this.target.object3D);
     const size = new THREE.Vector3();
     box.getSize(size);
     this.width = size.x;
     this.depth = size.z;
-    this.createDuplicates();
   },
 
   createDuplicates: function () {
@@ -26,7 +41,9 @@ AFRAME.registerComponent('duplicate', {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const clone = this.clone0.cloneNode(true);
-        clone.object3D.position.set(col * gap, 0, row * gap);
+        const x = col * (gap + this.width) + getRandomFloat(-this.data.entropy, this.data.entropy);
+        const z = row * (gap + this.depth) + getRandomFloat(-this.data.entropy, this.data.entropy);
+        clone.object3D.position.set(x, 0, z);
         if (this.data.gltf) clone.setAttribute('gltf-model', this.data.gltf);
         this.parent.appendChild(clone);
       }
@@ -35,7 +52,9 @@ AFRAME.registerComponent('duplicate', {
   },
 
   remove: function () {
-
+    this.parent.replaceChildren();
+    this.el.removeChild(this.parent);
+    if (this.data.gltf) this.target.setAttribute('gltf-model', this.data.gltf);
   },
 
 });

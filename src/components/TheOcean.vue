@@ -22,10 +22,13 @@
       rotation="-90 0 0"
     ></a-plane>
     <a-entity
-      duplicate="gltf: #tree-glb;"
+      duplicate="gltf: #tree-glb; entropy: 0.7; gap: 0.4; rows: 5; cols: 5;"
       gltf-model="#tree-glb"
     ></a-entity>
-    <a-entity light="type: ambient; intensity: 2; color: #445451"></a-entity>
+    <a-box
+      duplicate="rows: 5; cols: 5;"
+    ></a-box>
+    <a-entity light="type: ambient; intensity: 0.2; color: white"></a-entity>
     <a-entity light="type: point; intensity: 20; color: tomato" position="-30 12 -20"></a-entity>
    </a-entity>
 </template>
