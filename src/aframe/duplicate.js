@@ -27,7 +27,6 @@ AFRAME.registerComponent('duplicate', {
     } else {
       this.calculateBoundingBox();
       this.createDuplicates();
-      // for a simple geometry, we can just set opacity to 0 to hide the original
       this.target.setAttribute('material', 'opacity', 0);
     }
   },
