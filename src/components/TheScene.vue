@@ -5,14 +5,11 @@
   import TheCameraRig from './TheCameraRig.vue';
   import TheOcean from './TheOcean.vue';
 
-  import '../aframe/my-hexagon.js';
+  import '../aframe/hexagon-tessellation.js';
   import '../aframe/bloom.js';
+  import '../aframe/duplicate.js';
 
   const allAssetsLoaded = ref(false);
-
-  setTimeout(() => {
-    document.querySelector('my-hexagon').setAttribute('color', 'cyan');
-  }, 10000);
 </script>
 
 <template>
@@ -24,13 +21,37 @@
 
     <a-assets @loaded="allAssetsLoaded = true">
       <img id="sky-texture" :src="`assets/citrus_orchard_road_puresky.jpg`">
-      <a-asset-item id="tree-glb" src="assets/stylize_tree_lowpoly.glb"></a-asset-item>
+      <a-asset-item id="hill-glb" src="assets/mini_hill_1.glb"></a-asset-item>
     </a-assets>
 
     <template v-if="allAssetsLoaded">
+      <a-sky
+        src="#sky-texture"
+        material="fog: false"
+      ></a-sky>
+
+      <a-entity
+        position="0 -.5 -15"
+        duplicate="gltf: #hill-glb; entropy: 0.75; gap: 0.2; rows: 5; cols: 5;"
+        gltf-model="#hill-glb"
+        scale="0.5 0.5 0.5"
+      ></a-entity>
+
       <TheOcean></TheOcean>
-      <a-sky src="#sky-texture" material="fog: false"></a-sky>
-      <my-hexagon position="0 4 -4" radius="2"></my-hexagon>
+
+      <a-entity data-role="nav-mesh">
+        <hexagon-tessellation
+          position="0 -0.1 0"
+          radius="4"
+          height="0.5"
+          color-entropy="0.5"
+        ></hexagon-tessellation>
+
+        <a-box
+          position="7 -0.1 0"
+          duplicate="rows: 6; cols: 6; gap: 0.01; entropyHeight: 0.2;"
+        ></a-box>
+      </a-entity>
     </template>
 
     <TheCameraRig />

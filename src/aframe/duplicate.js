@@ -8,6 +8,7 @@ AFRAME.registerComponent('duplicate', {
     gap: {type: 'number', default: 0.1},
     gltf: {type: 'string', default: ''},
     entropy: {type: 'number', default: 0},
+    entropyHeight: {type: 'number', default: 0},
   },
 
   init: function () {
@@ -15,6 +16,7 @@ AFRAME.registerComponent('duplicate', {
     this.parent = document.createElement('a-entity');
     this.clone0 = this.target.cloneNode(true);
     this.clone0.removeAttribute('duplicate');
+    this.clone0.removeAttribute('position');
 
     if (this.data.gltf) {
       this.target.addEventListener('model-loaded', () => {
@@ -25,6 +27,8 @@ AFRAME.registerComponent('duplicate', {
     } else {
       this.calculateBoundingBox();
       this.createDuplicates();
+      // for a simple geometry, we can just set opacity to 0 to hide the original
+      this.target.setAttribute('material', 'opacity', 0);
     }
   },
 
@@ -43,11 +47,17 @@ AFRAME.registerComponent('duplicate', {
         const clone = this.clone0.cloneNode(true);
         const x = col * (gap + this.width) + getRandomFloat(-this.data.entropy, this.data.entropy);
         const z = row * (gap + this.depth) + getRandomFloat(-this.data.entropy, this.data.entropy);
-        clone.object3D.position.set(x, 0, z);
+        const y = getRandomFloat(-this.data.entropyHeight, this.data.entropyHeight);
+        clone.object3D.position.set(x, y, z);
         if (this.data.gltf) clone.setAttribute('gltf-model', this.data.gltf);
         this.parent.appendChild(clone);
       }
     }
+
+    const centerX = (cols - 1) * (gap + this.width) / 2;
+    const centerZ = (rows - 1) * (gap + this.depth) / 2;
+    this.parent.object3D.position.set(-centerX, 0, -centerZ);
+
     this.el.appendChild(this.parent);
   },
 
