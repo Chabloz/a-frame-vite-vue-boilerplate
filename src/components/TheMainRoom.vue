@@ -7,6 +7,7 @@
   import ExitDoor from './ExitDoor.vue';
 
   import '../aframe/listen-to.js';
+  import '../aframe/event-set.js';
   import '../aframe/life-like-automaton.js';
   import '../aframe/sakura-circle.js';
 
@@ -35,6 +36,19 @@
   function undropHandler(event) {
     droppedEl.value.delete(event.detail.el.getAttribute('id'));
   }
+
+  const switchIsOn = ref(false);
+
+  function lightSwitchHandler() {
+    switchIsOn.value = !switchIsOn.value;
+    if (switchIsOn.value) {
+      document.querySelector('#switch-box').emit('push-on');
+      document.querySelector('#main-light').emit('push-on');
+    } else {
+      document.querySelector('#main-light').emit('push-off');
+      document.querySelector('#switch-box').emit('push-off');
+    }
+  }
 </script>
 
 <template>
@@ -45,6 +59,27 @@
     position="0 0 -5"
     scale="1 1.1 1"
   >
+    <a-box
+      id="switch-box"
+      position="0 1 -3.8"
+      scale="0.25 0.25 0.25"
+      obb-collider
+      @obbcollisionstarted="lightSwitchHandler()"
+      @click="lightSwitchHandler()"
+      animation__push-on="property: position; to: 0 1 -3.9; dur: 1000; easing: easeOutQuad; startEvents: push-on;"
+      animation__push-off="property: position; to: 0 1 -3.8; dur: 1000; easing: easeOutQuad; startEvents: push-off;"
+      clickable
+    ></a-box>
+    <a-entity
+      id="main-light"
+      light="type: ambient; color: #BBB; intensity: 3.140"
+      event-set__push-on="event: push-on; attribute: light.intensity; value: 0.5;"
+      event-set__push-off="event: push-off; attribute: light.intensity; value: 3.140;"
+    ></a-entity>
+    <a-entity
+      light="type: directional; color: #FFF; intensity: 1.884"
+      position="-0.5 3 1"
+    ></a-entity>
 
     <a-entity
       geometry="primitive: plane; height: 2; width: 2;"

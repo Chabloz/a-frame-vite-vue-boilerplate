@@ -30,10 +30,11 @@
           disable-in-vr="component: raycaster; disableInAR: false;"
           hide-in-vr="hideInAR: false"
         ></a-entity>
-        <a-entity
+        <a-box
           id="dummy-hand-right"
+          obb-collider
           position="0.3 -0.4 -0.5"
-        ></a-entity>
+        ></a-box>
         <a-entity
           id="dummy-hand-left"
           position="-0.3 -0.4 -0.5"
@@ -69,7 +70,7 @@
       >
         <a-sphere id="hand-right-collider"
           radius="0.02"
-          visible="false"
+          visible="true"
           physx-body="type: kinematic; emitCollisionEvents: true">
         </a-sphere>
       </a-entity>

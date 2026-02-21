@@ -19,6 +19,7 @@
 
 <template>
   <a-scene
+    obb-collider="showColliders: false;"
     background="color: black;"
     :webxr="`
       requiredFeatures: local-floor;
