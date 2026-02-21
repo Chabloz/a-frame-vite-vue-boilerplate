@@ -37,6 +37,7 @@
         ></a-box>
         <a-entity
           id="dummy-hand-left"
+          obb-collider
           position="-0.3 -0.4 -0.5"
         ></a-entity>
       </a-entity>
@@ -50,6 +51,7 @@
           collisionEntities: [data-role='nav-mesh'];
           snapTurn: false;
         "
+        obb-collider
         position="0 1.5 0"
         physx-grab
       >
@@ -66,6 +68,7 @@
         laser-controls="hand: right"
         raycaster="far: 4; objects: [clickable]; showLine: true;"
         position="0 1.5 0"
+        obb-collider
         physx-grab
       >
         <a-sphere id="hand-right-collider"
