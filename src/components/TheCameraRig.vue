@@ -4,6 +4,10 @@
   import '../aframe/simple-navmesh-constraint.js';
   import '../aframe/blink-controls.js';
   import '../aframe/physx-grab.js';
+
+  defineProps({
+    allAssetsLoaded: Boolean,
+  });
 </script>
 
 <template>

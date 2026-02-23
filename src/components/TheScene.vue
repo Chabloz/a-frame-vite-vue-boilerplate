@@ -65,7 +65,7 @@
       <ThePhysicRoom />
     </template>
 
-    <TheCameraRig />
+    <TheCameraRig :allAssetsLoaded="allAssetsLoaded"/>
 
   </a-scene>
 </template>
