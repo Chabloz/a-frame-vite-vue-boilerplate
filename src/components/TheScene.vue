@@ -8,6 +8,7 @@
 
   import '../aframe/simple-grab.js';
   import '../aframe/outline.js';
+  import '../aframe/bloom.js'
 
   defineProps({
     scale: Number,
@@ -33,7 +34,7 @@
       useDefaultScene: false;
       wasmUrl: lib/physx.release.wasm;
     "
-    outline
+    bloom="strength: 1;"
     simple-grab
   >
 

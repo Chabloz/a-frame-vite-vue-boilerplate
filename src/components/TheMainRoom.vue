@@ -117,11 +117,10 @@
 
     <a-box
       id="box-left-grabbable"
-      color="red"
+       material="color: #d100e0; emissive: #b300a4; emissiveIntensity: 9.34"
       scale="0.3 0.3 0.3"
       position="0 0.25 1"
       clickable
-      outline-on-event
       simple-grab
     ></a-box>
 
