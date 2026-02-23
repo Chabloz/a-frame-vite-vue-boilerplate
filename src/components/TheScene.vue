@@ -1,5 +1,5 @@
 <script setup>
-  import { ref } from 'vue';
+  import { onMounted, ref } from 'vue';
   import '../aframe/clickable.js';
 
   import TheCameraRig from './TheCameraRig.vue';
@@ -8,6 +8,11 @@
   import '../aframe/my-hexagon-tessellation.js';
   import '../aframe/bloom.js';
   import '../aframe/duplicate.js';
+    import '../aframe/look-at.js';
+
+  function handleCol(){
+    console.log("collision detected !");
+  }
 
   const allAssetsLoaded = ref(false);
 </script>
@@ -46,12 +51,21 @@
           position="0 -0.1 0"
           radius="4"
           height="0.5"
-          color-entropy="0.5"
+          color-entropy="0.1"
         ></my-hexagon-tessellation>
 
         <a-box
           position="7 -0.1 0"
           duplicate="rows: 6; cols: 6; gap: 0.01; entropyHeight: 0.2;"
+        ></a-box>
+
+        <a-box
+          id="switch-light"
+          position="0 1 -3"
+          obb-collider
+          @obbcollisionstarted="handleCol()"
+          look-at
+          animation="property: position; to: 0 1 -6; dur: 2000; easing: linear; startEvents: obbcollisionstarted"
         ></a-box>
       </a-entity>
     </template>

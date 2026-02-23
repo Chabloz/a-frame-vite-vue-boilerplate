@@ -30,14 +30,17 @@
           disable-in-vr="component: raycaster; disableInAR: false;"
           hide-in-vr="hideInAR: false"
         ></a-entity>
-        <a-entity
+        <a-box
           id="dummy-hand-right"
-          position="0.3 -0.4 -0.5"
-        ></a-entity>
-        <a-entity
+          obb-collider
+          scale="0.5 0.5 0.5"
+          position="0.3 -0.4 -1"
+        ></a-box>
+        <a-box
           id="dummy-hand-left"
           position="-0.3 -0.4 -0.5"
-        ></a-entity>
+          obb-collider
+        ></a-box>
       </a-entity>
 
       <a-entity
@@ -49,6 +52,7 @@
           collisionEntities: [data-role='nav-mesh'];
           snapTurn: false;
         "
+        obb-collider
         position="0 1.5 0"
       >
         <a-sphere id="hand-left-collider"
@@ -63,6 +67,7 @@
         laser-controls="hand: right"
         raycaster="far: 4; objects: [clickable]; showLine: true;"
         position="0 1.5 0"
+        obb-collider
       >
         <a-sphere id="hand-right-collider"
           radius="0.02"
