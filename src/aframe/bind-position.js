@@ -8,4 +8,5 @@ AFRAME.registerComponent('bind-position', {
   tick: function () {
     copyPosition(this.data.target, this.el);
   }
+
 });
