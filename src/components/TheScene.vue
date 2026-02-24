@@ -8,7 +8,10 @@
   import '../aframe/my-hexagon-tessellation.js';
   import '../aframe/bloom.js';
   import '../aframe/duplicate.js';
-    import '../aframe/look-at.js';
+  import '../aframe/look-at.js';
+  import '../aframe/emit-when-near.js';
+  import '../aframe/event-set.js';
+
 
   function handleCol(){
     console.log("collision detected !");
@@ -61,12 +64,22 @@
 
         <a-box
           id="switch-light"
-          position="0 1 -3"
+          position="0 1 -4"
           obb-collider
           @obbcollisionstarted="handleCol()"
           look-at
-          animation="property: position; to: 0 1 -6; dur: 2000; easing: linear; startEvents: obbcollisionstarted"
+          animation="property: position; to: 0 1 -6; dur: 2000; easing: linear; startEvents: click"
         ></a-box>
+
+        <a-entity
+          emit-when-near="distance: 2;"
+          position="0 2 -4"
+          text="value: Hello World;"
+          scale="2 2 2"
+          visible="false"
+          event-set__enter="value: true; attribute: visible;"
+          event-set__leave="value: false; attribute: visible; event: unclick"
+        ></a-entity>
       </a-entity>
     </template>
 
