@@ -77,8 +77,8 @@
           text="value: Hello World;"
           scale="2 2 2"
           visible="false"
-          event-set__enter="value: true; attribute: visible;"
-          event-set__leave="value: false; attribute: visible; event: unclick"
+          event-set__enter="value: true; attribute: visible; event: click;"
+          event-set__leave="value: false; attribute: visible; event: unclick;"
         ></a-entity>
       </a-entity>
     </template>
