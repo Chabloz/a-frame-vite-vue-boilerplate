@@ -14,7 +14,7 @@ var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 // Gesture detection buffer (coarser spacing than trail, independent of visual)
 var GESTURE_BUF_CAP   = 96;    // 96 points × 1 cm = ~96 cm of path (handles up to r~15 cm)
 var GESTURE_MIN_DIST  = 0.01;  // min distance (m) between gesture points (1 cm)
-var GESTURE_CLOSURE   = 0.06;  // (m) how close tip must return to a past point to trigger check
+var GESTURE_CLOSURE   = 0.04;  // (m) how close tip must return to a past point to trigger check
 var GESTURE_MIN_WIN   = 20;    // minimum gesture points to form a circle
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
@@ -376,9 +376,11 @@ AFRAME.registerComponent('hand-gestures', {
             radius: result.radius,
             center: result.center,
           });
+          // Fully reset gesture buffer
+          for (var g = 0; g < this._gestureCount; g++) this._gestureBuf[g].set(0, 0, 0);
           this._gestureCount    = 0;
           this._gestureLastPt.set(1e9, 1e9, 1e9);
-          this._gestureCooldown = t + 1200;
+          this._gestureCooldown = t + 2000;
           return;
         }
         // Skip ahead to avoid re-testing near-duplicate closure candidates
@@ -432,7 +434,7 @@ AFRAME.registerComponent('hand-gestures', {
     var axisV = new THREE.Vector3().crossVectors(normal, axisU).normalize();
 
     // ── 4. Project to 2-D & compute sectors ──
-    var NUM_SECTORS = 8;
+    var NUM_SECTORS = 12;
     var sectorAngle = (2 * Math.PI) / NUM_SECTORS;
     var sectors     = [];
     var totalDist   = 0;
@@ -470,13 +472,13 @@ AFRAME.registerComponent('hand-gestures', {
 
     // ── 8. Validate ──
     var dominant = Math.max(fwd, bwd);
-    if (bad > 2)       return false; // too many non-sequential jumps
-    if (dominant < 6)  return false; // need at least 6 clean steps (~270°)
+    if (bad > 0)       return false; // zero non-sequential jumps allowed
+    if (dominant < 10) return false; // need at least 10 clean steps (one full loop)
 
-    // Check enough unique sectors visited (at least 7 of 8)
+    // Check all 12 sectors visited
     var visited = {};
     for (var i = 0; i < n; i++) visited[sectors[i]] = true;
-    if (Object.keys(visited).length < 7) return false;
+    if (Object.keys(visited).length < 12) return false;
 
     // ── All checks passed ──
     return {
