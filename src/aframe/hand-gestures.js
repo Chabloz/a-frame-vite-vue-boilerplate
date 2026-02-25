@@ -6,7 +6,10 @@ var INDEX_TIP_BONE    = 9;     // index-finger-tip joint index
 var TRAIL_HISTORY     = 28;    // control points kept for the CatmullRom curve
 var TRAIL_SAMPLES     = 72;    // ribbon segments sampled from curve
 var TRAIL_HALF_WIDTH  = 0.014; // meters at the tip (tapers to 0 at tail)
-var MIN_MOVE_DIST     = 0.004; // min displacement (m) to record a new control point
+var MIN_MOVE_DIST     = 0.003; // min displacement (m) to record a new control point
+var SPEED_MIN         = 0.25;  // m/s — below this speed ribbon is invisible
+var SPEED_MAX         = 1.2;   // m/s — above this speed ribbon is at full length
+var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
@@ -19,11 +22,12 @@ var RIBBON_VERT = /* glsl */`
 `;
 
 var RIBBON_FRAG = /* glsl */`
-  uniform vec3 uColor;
+  uniform vec3  uColor;
+  uniform float uAlpha;
   varying float vT;
   void main() {
     // Fade from opaque tip to transparent tail, with core glow
-    float alpha = pow(1.0 - vT, 1.4) * 0.92;
+    float alpha = pow(1.0 - vT, 1.4) * 0.92 * uAlpha;
     vec3  glow  = uColor + (1.0 - vT) * 0.35; // brighten toward tip
     gl_FragColor = vec4(glow, alpha);
   }
@@ -71,7 +75,12 @@ AFRAME.registerComponent('hand-gestures', {
     this._ribbonIdxArr = this._buildIndexBuffer();
 
     // Track last timestamp to compute history decay
-    this._lastAddTime  = 0;
+    this._lastAddTime     = 0;
+
+    // Speed tracking (EMA)
+    this._speed           = 0;     // smoothed m/s
+    this._prevTipPos      = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
+    this._visibleHistory  = 0;     // how many curve points are actually drawn
 
     if (this.data.debug) this._createInstancedMesh();
     if (this.data.trail) this._createRibbon();
@@ -147,7 +156,10 @@ AFRAME.registerComponent('hand-gestures', {
     this._ribbonGeo.setIndex(new THREE.BufferAttribute(this._ribbonIdxArr, 1));
 
     this._ribbonMat = new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color(this.data.trailColor) } },
+      uniforms: {
+        uColor: { value: new THREE.Color(this.data.trailColor) },
+        uAlpha: { value: 1.0 },
+      },
       vertexShader:   RIBBON_VERT,
       fragmentShader: RIBBON_FRAG,
       transparent:    true,
@@ -193,9 +205,10 @@ AFRAME.registerComponent('hand-gestures', {
     }
   },
 
-  _rebuildRibbon: function () {
-    var n = this._histCount;
+  _rebuildRibbon: function (visibleN, alpha) {
+    var n = (visibleN !== undefined) ? visibleN : this._histCount;
     if (n < 3) { this._ribbonMesh.visible = false; return; }
+    if (this._ribbonMat) this._ribbonMat.uniforms.uAlpha.value = (alpha !== undefined) ? alpha : 1.0;
 
     // Point the curve at the valid slice only
     this._curve.points = this._curveVecs.slice(0, n);
@@ -244,7 +257,7 @@ AFRAME.registerComponent('hand-gestures', {
   },
 
   // ── Tick ───────────────────────────────────────────────────────────────────
-  tick: function (t) {
+  tick: function (t, dt) {
     var handControls = this.el.components['hand-tracking-controls'];
     var hasPoses     = handControls && handControls.hasPoses;
     var jointPoses   = hasPoses ? handControls.jointPoses : null;
@@ -268,8 +281,11 @@ AFRAME.registerComponent('hand-gestures', {
     if (!this._ribbonMesh) return;
 
     if (!hasPoses) {
-      this._decayHistory(t);
-      if (this._histCount >= 3) this._rebuildRibbon();
+      // Decay speed to 0 so ribbon fades out
+      this._speed = this._speed * (1 - SPEED_EMA);
+      var fadedAlpha = Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN));
+      var fadedHist  = Math.round(fadedAlpha * this._histCount);
+      if (fadedHist >= 3) this._rebuildRibbon(fadedHist, fadedAlpha);
       else this._ribbonMesh.visible = false;
       return;
     }
@@ -278,13 +294,30 @@ AFRAME.registerComponent('hand-gestures', {
     this._jointMatrix.fromArray(jointPoses, INDEX_TIP_BONE * 16);
     this._tipPosition.setFromMatrixPosition(this._jointMatrix);
 
+    // ── Speed EMA ──
+    var dtSec    = Math.max(dt, 1) / 1000; // avoid div-by-zero
+    var rawDist  = this._tipPosition.distanceTo(this._prevTipPos);
+    var rawSpeed = (rawDist / dtSec);       // m/s
+    this._speed  = this._speed + SPEED_EMA * (rawSpeed - this._speed);
+    this._prevTipPos.copy(this._tipPosition);
+
+    // Map speed → [0..1]
+    var speedT = Math.min(1, Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)));
+
+    // How many history points to show (full buffer at SPEED_MAX, 0 at SPEED_MIN)
+    this._visibleHistory = Math.round(speedT * this._histCount);
+
     // Add to history only if moved enough (avoids degenerate curve segments)
-    if (this._tipPosition.distanceTo(this._lastHistPt) >= MIN_MOVE_DIST) {
+    if (rawDist >= MIN_MOVE_DIST) {
       this._pushHistoryPoint(this._tipPosition);
       this._lastAddTime = t;
     }
 
-    this._rebuildRibbon();
+    if (this._visibleHistory >= 3) {
+      this._rebuildRibbon(this._visibleHistory, speedT);
+    } else {
+      this._ribbonMesh.visible = false;
+    }
   },
 
   remove: function () {
