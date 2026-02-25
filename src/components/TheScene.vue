@@ -13,11 +13,10 @@
   >
 
     <a-assets @loaded="allAssetsLoaded = true">
-
     </a-assets>
 
     <template v-if="allAssetsLoaded">
-      <a-box position="0 0 -2" color="tomato"></a-box>
+      <a-box position="2 0 -2"></a-box>
     </template>
 
     <TheCameraRig :allAssetsLoaded="allAssetsLoaded"/>

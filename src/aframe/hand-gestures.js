@@ -3,13 +3,19 @@ var FINGERTIP_INDICES = [4, 9, 14, 19, 24];
 var FINGERTIP_COLORS  = [0xe74c3c, 0x2ecc71, 0x3498db, 0xf39c12, 0x9b59b6];
 
 var INDEX_TIP_BONE    = 9;     // index-finger-tip joint index
-var TRAIL_HISTORY     = 28;    // control points kept for the CatmullRom curve
+var TRAIL_HISTORY     = 72;    // control points kept for the CatmullRom curve (visual only)
 var TRAIL_SAMPLES     = 72;    // ribbon segments sampled from curve
 var TRAIL_HALF_WIDTH  = 0.014; // meters at the tip (tapers to 0 at tail)
-var MIN_MOVE_DIST     = 0.003; // min displacement (m) to record a new control point
+var MIN_MOVE_DIST     = 0.003; // min displacement (m) to record a new trail point
 var SPEED_MIN         = 0.25;  // m/s — below this speed ribbon is invisible
 var SPEED_MAX         = 1.2;   // m/s — above this speed ribbon is at full length
 var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
+
+// Gesture detection buffer (coarser spacing than trail, independent of visual)
+var GESTURE_BUF_CAP   = 96;    // 96 points × 1 cm = ~96 cm of path (handles up to r~15 cm)
+var GESTURE_MIN_DIST  = 0.01;  // min distance (m) between gesture points (1 cm)
+var GESTURE_CLOSURE   = 0.06;  // (m) how close tip must return to a past point to trigger check
+var GESTURE_MIN_WIN   = 20;    // minimum gesture points to form a circle
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
@@ -36,10 +42,11 @@ var RIBBON_FRAG = /* glsl */`
 
 AFRAME.registerComponent('hand-gestures', {
   schema: {
-    debug:      { type: 'boolean', default: false },
-    trail:      { type: 'boolean', default: true  },
-    trailColor: { type: 'color',   default: '#ffd700' },
-    trailFade:  { type: 'number',  default: 1000 },     // ms (controls history decay rate)
+    debug:           { type: 'boolean', default: false },
+    trail:           { type: 'boolean', default: true  },
+    trailColor:      { type: 'color',   default: '#ffd700' },
+    trailFade:       { type: 'number',  default: 1000 },
+    circleMinRadius: { type: 'number',  default: 0.07 }, // meters (7 cm default)
   },
 
   init: function () {
@@ -81,6 +88,12 @@ AFRAME.registerComponent('hand-gestures', {
     this._speed           = 0;     // smoothed m/s
     this._prevTipPos      = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
     this._visibleHistory  = 0;     // how many curve points are actually drawn
+
+    // ── Gesture detection buffer (coarser than trail, for circle recognition) ──
+    this._gestureBuf    = Array.from({ length: GESTURE_BUF_CAP }, function () { return new THREE.Vector3(); });
+    this._gestureCount  = 0;
+    this._gestureLastPt = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
+    this._gestureCooldown = 0; // timestamp until next detection is allowed
 
     if (this.data.debug) this._createInstancedMesh();
     if (this.data.trail) this._createRibbon();
@@ -277,20 +290,20 @@ AFRAME.registerComponent('hand-gestures', {
       }
     }
 
-    // ── Ribbon ──
-    if (!this._ribbonMesh) return;
-
+    // ── No hand data ──
     if (!hasPoses) {
-      // Decay speed to 0 so ribbon fades out
-      this._speed = this._speed * (1 - SPEED_EMA);
-      var fadedAlpha = Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN));
-      var fadedHist  = Math.round(fadedAlpha * this._histCount);
-      if (fadedHist >= 3) this._rebuildRibbon(fadedHist, fadedAlpha);
-      else this._ribbonMesh.visible = false;
+      if (this._ribbonMesh) {
+        // Decay speed to 0 so ribbon fades out
+        this._speed = this._speed * (1 - SPEED_EMA);
+        var fadedAlpha = Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN));
+        var fadedHist  = Math.round(fadedAlpha * this._histCount);
+        if (fadedHist >= 3) this._rebuildRibbon(fadedHist, fadedAlpha);
+        else this._ribbonMesh.visible = false;
+      }
       return;
     }
 
-    // Get current index fingertip world position
+    // ── Get current index fingertip world position ──
     this._jointMatrix.fromArray(jointPoses, INDEX_TIP_BONE * 16);
     this._tipPosition.setFromMatrixPosition(this._jointMatrix);
 
@@ -301,22 +314,24 @@ AFRAME.registerComponent('hand-gestures', {
     this._speed  = this._speed + SPEED_EMA * (rawSpeed - this._speed);
     this._prevTipPos.copy(this._tipPosition);
 
-    // Map speed → [0..1]
-    var speedT = Math.min(1, Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)));
-
-    // How many history points to show (full buffer at SPEED_MAX, 0 at SPEED_MIN)
-    this._visibleHistory = Math.round(speedT * this._histCount);
-
-    // Add to history only if moved enough (avoids degenerate curve segments)
+    // ── Record trail + gesture points ──
     if (rawDist >= MIN_MOVE_DIST) {
-      this._pushHistoryPoint(this._tipPosition);
-      this._lastAddTime = t;
+      if (this._ribbonMesh) {
+        this._pushHistoryPoint(this._tipPosition);
+        this._lastAddTime = t;
+      }
+      this._pushGesturePoint(this._tipPosition, t);
     }
 
-    if (this._visibleHistory >= 3) {
-      this._rebuildRibbon(this._visibleHistory, speedT);
-    } else {
-      this._ribbonMesh.visible = false;
+    // ── Ribbon visual ──
+    if (this._ribbonMesh) {
+      var speedT = Math.min(1, Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)));
+      this._visibleHistory = Math.round(speedT * this._histCount);
+      if (this._visibleHistory >= 3) {
+        this._rebuildRibbon(this._visibleHistory, speedT);
+      } else {
+        this._ribbonMesh.visible = false;
+      }
     }
   },
 
@@ -324,4 +339,150 @@ AFRAME.registerComponent('hand-gestures', {
     this._destroyInstancedMesh();
     this._destroyRibbon();
   },
+
+  // ── Gesture buffer ───────────────────────────────────────────────────────
+  // Separate from the visual trail, points are added every ~1 cm.
+  // The buffer stores pts[0]=newest … pts[n-1]=oldest (same convention as trail).
+  _pushGesturePoint: function (pos, t) {
+    if (pos.distanceTo(this._gestureLastPt) < GESTURE_MIN_DIST) return;
+
+    // Circular shift
+    var cap = GESTURE_BUF_CAP;
+    var n   = Math.min(this._gestureCount + 1, cap);
+    for (var i = n - 1; i > 0; i--) this._gestureBuf[i].copy(this._gestureBuf[i - 1]);
+    this._gestureBuf[0].copy(pos);
+    this._gestureCount = n;
+    this._gestureLastPt.copy(pos);
+
+    if (t > this._gestureCooldown && n > GESTURE_MIN_WIN) {
+      this._detectPatterns(t);
+    }
+  },
+
+  // ── Pattern dispatcher ────────────────────────────────────────────────────
+  // Closure-based detection: scan pts[k] to find where the newest point (pts[0])
+  // has returned close to an older position — that is the natural window of the gesture.
+  _detectPatterns: function (t) {
+    var pts = this._gestureBuf;
+    var n   = this._gestureCount;
+    var tip = pts[0]; // newest point
+
+    for (var k = GESTURE_MIN_WIN; k < n; k++) {
+      if (tip.distanceTo(pts[k]) <= GESTURE_CLOSURE) {
+        // Found a natural closure at k points ago — test pts[0..k] as a circle
+        var result = this._detectCircle(k + 1);
+        if (result) {
+          this.el.emit('shape-circle', {
+            radius: result.radius,
+            center: result.center,
+          });
+          this._gestureCount    = 0;
+          this._gestureLastPt.set(1e9, 1e9, 1e9);
+          this._gestureCooldown = t + 1200;
+          return;
+        }
+        // Skip ahead to avoid re-testing near-duplicate closure candidates
+        k += 5;
+      }
+    }
+  },
+
+  // ── Circle detector ──────────────────────────────────────────────────────
+  //
+  // "Virtual hitbox" approach:
+  //  1. Compute centroid and plane normal (Newell's method) from gesture points.
+  //  2. Project to 2-D on that plane.
+  //  3. Divide the plane into 8 angular sectors (like a clock: 0-7).
+  //  4. Walk through points, record sector sequence (skip consecutive duplicates).
+  //  5. Count forward (+1 mod 8) and backward (-1 mod 8) transitions.
+  //  6. Accept if:
+  //     a. At least 7 of 8 sectors visited
+  //     b. At least 6 transitions are sequential (CW or CCW)
+  //     c. At most 2 "bad" (non-sequential) transitions
+  //     d. Average radius >= circleMinRadius
+  //
+  _detectCircle: function (count) {
+    var n = count || this._gestureCount;
+    if (n < GESTURE_MIN_WIN) return false;
+
+    var pts = this._gestureBuf;
+
+    // ── 1. Centroid ──
+    var cx = 0, cy = 0, cz = 0;
+    for (var i = 0; i < n; i++) { cx += pts[i].x; cy += pts[i].y; cz += pts[i].z; }
+    cx /= n; cy /= n; cz /= n;
+
+    // ── 2. Plane normal via Newell's method ──
+    var nx = 0, ny = 0, nz = 0;
+    for (var i = 0; i < n; i++) {
+      var j   = (i + 1) % n;
+      var dxi = pts[i].x - cx, dyi = pts[i].y - cy, dzi = pts[i].z - cz;
+      var dxj = pts[j].x - cx, dyj = pts[j].y - cy, dzj = pts[j].z - cz;
+      nx += dyi * dzj - dzi * dyj;
+      ny += dzi * dxj - dxi * dzj;
+      nz += dxi * dyj - dyi * dxj;
+    }
+    var nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    if (nLen < 1e-10) return false;
+    var normal = new THREE.Vector3(nx / nLen, ny / nLen, nz / nLen);
+
+    // ── 3. Orthonormal basis on the plane ──
+    var up    = Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    var axisU = new THREE.Vector3().crossVectors(normal, up).normalize();
+    var axisV = new THREE.Vector3().crossVectors(normal, axisU).normalize();
+
+    // ── 4. Project to 2-D & compute sectors ──
+    var NUM_SECTORS = 8;
+    var sectorAngle = (2 * Math.PI) / NUM_SECTORS;
+    var sectors     = [];
+    var totalDist   = 0;
+
+    for (var i = 0; i < n; i++) {
+      var dx = pts[i].x - cx, dy = pts[i].y - cy, dz = pts[i].z - cz;
+      var u  = axisU.x * dx + axisU.y * dy + axisU.z * dz;
+      var v  = axisV.x * dx + axisV.y * dy + axisV.z * dz;
+      totalDist += Math.sqrt(u * u + v * v);
+      var angle  = Math.atan2(v, u); // -PI to PI
+      var sector = Math.floor(((angle + Math.PI) / sectorAngle)) % NUM_SECTORS;
+      sectors.push(sector);
+    }
+
+    // ── 5. Average radius check ──
+    var avgRadius = totalDist / n;
+    if (avgRadius < this.data.circleMinRadius) return false;
+
+    // ── 6. Deduplicate consecutive same-sector entries ──
+    var seq = [sectors[0]];
+    for (var i = 1; i < n; i++) {
+      if (sectors[i] !== seq[seq.length - 1]) {
+        seq.push(sectors[i]);
+      }
+    }
+
+    // ── 7. Count transitions: forward (+1), backward (-1), or bad ──
+    var fwd = 0, bwd = 0, bad = 0;
+    for (var i = 1; i < seq.length; i++) {
+      var diff = (seq[i] - seq[i - 1] + NUM_SECTORS) % NUM_SECTORS;
+      if (diff === 1)                    fwd++;
+      else if (diff === NUM_SECTORS - 1) bwd++;  // −1 mod 8 = 7
+      else                               bad++;
+    }
+
+    // ── 8. Validate ──
+    var dominant = Math.max(fwd, bwd);
+    if (bad > 2)       return false; // too many non-sequential jumps
+    if (dominant < 6)  return false; // need at least 6 clean steps (~270°)
+
+    // Check enough unique sectors visited (at least 7 of 8)
+    var visited = {};
+    for (var i = 0; i < n; i++) visited[sectors[i]] = true;
+    if (Object.keys(visited).length < 7) return false;
+
+    // ── All checks passed ──
+    return {
+      radius: avgRadius,
+      center: new THREE.Vector3(cx, cy, cz),
+    };
+  },
+
 });

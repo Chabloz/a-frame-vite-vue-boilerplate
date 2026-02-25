@@ -11,7 +11,7 @@ const fullReloadPlugin = {
 
 export default defineConfig(({ command, mode }) => {
   const config = {
-    base: "/h6/",
+    base: "/h10/",
     plugins: [
       basicSsl(),
       vue({
