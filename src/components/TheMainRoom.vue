@@ -63,8 +63,6 @@
       id="switch-box"
       position="0 1 -3.8"
       scale="0.25 0.25 0.25"
-      obb-collider
-      @obbcollisionstarted="lightSwitchHandler()"
       @click="lightSwitchHandler()"
       animation__push-on="property: position; to: 0 1 -3.9; dur: 1000; easing: easeOutQuad; startEvents: push-on;"
       animation__push-off="property: position; to: 0 1 -3.8; dur: 1000; easing: easeOutQuad; startEvents: push-off;"

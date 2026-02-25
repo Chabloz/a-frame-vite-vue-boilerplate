@@ -36,12 +36,10 @@
         ></a-entity>
         <a-box
           id="dummy-hand-right"
-          obb-collider
           position="0.3 -0.4 -0.5"
         ></a-box>
         <a-entity
           id="dummy-hand-left"
-          obb-collider
           position="-0.3 -0.4 -0.5"
         ></a-entity>
       </a-entity>
@@ -55,8 +53,7 @@
           collisionEntities: [data-role='nav-mesh'];
           snapTurn: false;
         "
-        obb-collider
-        position="0 1.5 0"
+        position="-0.5 1.5 0"
         physx-grab
       >
         <a-sphere id="hand-left-collider"
@@ -71,13 +68,12 @@
         hand-controls="hand: right"
         laser-controls="hand: right"
         raycaster="far: 4; objects: [clickable]; showLine: true;"
-        position="0 1.5 0"
-        obb-collider
+        position="0.5 1.5 0"
         physx-grab
       >
         <a-sphere id="hand-right-collider"
           radius="0.02"
-          visible="true"
+          visible="false"
           physx-body="type: kinematic; emitCollisionEvents: true">
         </a-sphere>
       </a-entity>
