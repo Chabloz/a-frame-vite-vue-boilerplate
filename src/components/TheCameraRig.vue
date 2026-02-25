@@ -9,16 +9,6 @@
   defineProps({
     allAssetsLoaded: Boolean,
   });
-
-  function onShapeCircle() {
-    const box = document.createElement('a-box');
-    box.setAttribute('position', '-1 1 -2');
-    box.setAttribute('color', '#FF0000');
-    document.querySelector('a-scene').appendChild(box);
-    setTimeout(() => {
-      box.parentNode.removeChild(box);
-    }, 1000);
-  }
 </script>
 
 <template>
@@ -39,7 +29,6 @@
         id="hand-right"
         hand-tracking-controls="hand: right; modelOpacity: 0.5"
         hand-gestures
-        @shape-circle="onShapeCircle()"
       ></a-entity>
 
   </a-entity>

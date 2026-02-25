@@ -11,11 +11,14 @@ var SPEED_MIN         = 0.25;  // m/s — below this speed ribbon is invisible
 var SPEED_MAX         = 1.2;   // m/s — above this speed ribbon is at full length
 var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 
-// Gesture detection buffer (coarser spacing than trail, independent of visual)
-var GESTURE_BUF_CAP   = 96;    // 96 points × 1 cm = ~96 cm of path (handles up to r~15 cm)
-var GESTURE_MIN_DIST  = 0.01;  // min distance (m) between gesture points (1 cm)
-var GESTURE_CLOSURE   = 0.04;  // (m) how close tip must return to a past point to trigger check
-var GESTURE_MIN_WIN   = 20;    // minimum gesture points to form a circle
+// Hitbox ring config
+var NUM_HITBOXES      = 12;        // boxes arranged in a circle
+var HITBOX_RADIUS     = 0.08;      // circle radius (m) around center
+var HITBOX_SIZE       = 0.02;      // a-box edge size (m)
+var HITBOX_HIT_DIST   = 0.025;     // collision threshold (m)
+var HITBOX_COLOR      = '#4488ff'; // default color
+var HITBOX_HIT_COLOR  = '#ff4444'; // color when hit
+var HITBOX_HIT_MS     = 1000;      // ms to show hit color
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
@@ -46,7 +49,6 @@ AFRAME.registerComponent('hand-gestures', {
     trail:           { type: 'boolean', default: true  },
     trailColor:      { type: 'color',   default: '#ffd700' },
     trailFade:       { type: 'number',  default: 1000 },
-    circleMinRadius: { type: 'number',  default: 0.07 }, // meters (7 cm default)
   },
 
   init: function () {
@@ -89,11 +91,29 @@ AFRAME.registerComponent('hand-gestures', {
     this._prevTipPos      = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
     this._visibleHistory  = 0;     // how many curve points are actually drawn
 
-    // ── Gesture detection buffer (coarser than trail, for circle recognition) ──
-    this._gestureBuf    = Array.from({ length: GESTURE_BUF_CAP }, function () { return new THREE.Vector3(); });
-    this._gestureCount  = 0;
-    this._gestureLastPt = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
-    this._gestureCooldown = 0; // timestamp until next detection is allowed
+    // ── Hitbox ring (real a-box entities, children of the hand) ──
+    this._hitboxEls     = [];
+    this._hitboxHitUntil = [];   // per-box timestamp: when to revert color
+    this._hitboxWorldPos = new THREE.Vector3();
+
+    for (var h = 0; h < NUM_HITBOXES; h++) {
+      var angle = (2 * Math.PI * h) / NUM_HITBOXES;
+      var hx = HITBOX_RADIUS * Math.cos(angle);
+      var hy = HITBOX_RADIUS * Math.sin(angle);
+
+      var box = document.createElement('a-box');
+      box.setAttribute('width',  HITBOX_SIZE);
+      box.setAttribute('height', HITBOX_SIZE);
+      box.setAttribute('depth',  HITBOX_SIZE);
+      box.setAttribute('position', hx.toFixed(4) + ' ' + hy.toFixed(4) + ' -0.15');
+      box.setAttribute('color', HITBOX_COLOR);
+      box.setAttribute('opacity', '0.6');
+      box.setAttribute('data-hitbox-index', h);
+      this.el.appendChild(box);
+
+      this._hitboxEls.push(box);
+      this._hitboxHitUntil.push(0);
+    }
 
     if (this.data.debug) this._createInstancedMesh();
     if (this.data.trail) this._createRibbon();
@@ -320,7 +340,6 @@ AFRAME.registerComponent('hand-gestures', {
         this._pushHistoryPoint(this._tipPosition);
         this._lastAddTime = t;
       }
-      this._pushGesturePoint(this._tipPosition, t);
     }
 
     // ── Ribbon visual ──
@@ -333,158 +352,47 @@ AFRAME.registerComponent('hand-gestures', {
         this._ribbonMesh.visible = false;
       }
     }
+
+    // ── Hitbox collision ──
+    this._checkHitboxes(t);
   },
 
   remove: function () {
     this._destroyInstancedMesh();
     this._destroyRibbon();
+    this._removeHitboxes();
   },
 
-  // ── Gesture buffer ───────────────────────────────────────────────────────
-  // Separate from the visual trail, points are added every ~1 cm.
-  // The buffer stores pts[0]=newest … pts[n-1]=oldest (same convention as trail).
-  _pushGesturePoint: function (pos, t) {
-    if (pos.distanceTo(this._gestureLastPt) < GESTURE_MIN_DIST) return;
+  // ── Hitbox collision detection ─────────────────────────────────────────
+  _checkHitboxes: function (t) {
+    for (var i = 0; i < this._hitboxEls.length; i++) {
+      var hb = this._hitboxEls[i];
+      hb.object3D.getWorldPosition(this._hitboxWorldPos);
 
-    // Circular shift
-    var cap = GESTURE_BUF_CAP;
-    var n   = Math.min(this._gestureCount + 1, cap);
-    for (var i = n - 1; i > 0; i--) this._gestureBuf[i].copy(this._gestureBuf[i - 1]);
-    this._gestureBuf[0].copy(pos);
-    this._gestureCount = n;
-    this._gestureLastPt.copy(pos);
-
-    if (t > this._gestureCooldown && n > GESTURE_MIN_WIN) {
-      this._detectPatterns(t);
-    }
-  },
-
-  // ── Pattern dispatcher ────────────────────────────────────────────────────
-  // Closure-based detection: scan pts[k] to find where the newest point (pts[0])
-  // has returned close to an older position — that is the natural window of the gesture.
-  _detectPatterns: function (t) {
-    var pts = this._gestureBuf;
-    var n   = this._gestureCount;
-    var tip = pts[0]; // newest point
-
-    for (var k = GESTURE_MIN_WIN; k < n; k++) {
-      if (tip.distanceTo(pts[k]) <= GESTURE_CLOSURE) {
-        // Found a natural closure at k points ago — test pts[0..k] as a circle
-        var result = this._detectCircle(k + 1);
-        if (result) {
-          this.el.emit('shape-circle', {
-            radius: result.radius,
-            center: result.center,
-          });
-          // Fully reset gesture buffer
-          for (var g = 0; g < this._gestureCount; g++) this._gestureBuf[g].set(0, 0, 0);
-          this._gestureCount    = 0;
-          this._gestureLastPt.set(1e9, 1e9, 1e9);
-          this._gestureCooldown = t + 2000;
-          return;
+      // Hit detection
+      if (this._tipPosition.distanceTo(this._hitboxWorldPos) < HITBOX_HIT_DIST) {
+        if (this._hitboxHitUntil[i] === 0) {
+          hb.setAttribute('color', HITBOX_HIT_COLOR);
+          this._hitboxHitUntil[i] = t + HITBOX_HIT_MS;
         }
-        // Skip ahead to avoid re-testing near-duplicate closure candidates
-        k += 5;
+      }
+
+      // Revert color after timer
+      if (this._hitboxHitUntil[i] > 0 && t > this._hitboxHitUntil[i]) {
+        hb.setAttribute('color', HITBOX_COLOR);
+        this._hitboxHitUntil[i] = 0;
       }
     }
   },
 
-  // ── Circle detector ──────────────────────────────────────────────────────
-  //
-  // "Virtual hitbox" approach:
-  //  1. Compute centroid and plane normal (Newell's method) from gesture points.
-  //  2. Project to 2-D on that plane.
-  //  3. Divide the plane into 8 angular sectors (like a clock: 0-7).
-  //  4. Walk through points, record sector sequence (skip consecutive duplicates).
-  //  5. Count forward (+1 mod 8) and backward (-1 mod 8) transitions.
-  //  6. Accept if:
-  //     a. At least 7 of 8 sectors visited
-  //     b. At least 6 transitions are sequential (CW or CCW)
-  //     c. At most 2 "bad" (non-sequential) transitions
-  //     d. Average radius >= circleMinRadius
-  //
-  _detectCircle: function (count) {
-    var n = count || this._gestureCount;
-    if (n < GESTURE_MIN_WIN) return false;
-
-    var pts = this._gestureBuf;
-
-    // ── 1. Centroid ──
-    var cx = 0, cy = 0, cz = 0;
-    for (var i = 0; i < n; i++) { cx += pts[i].x; cy += pts[i].y; cz += pts[i].z; }
-    cx /= n; cy /= n; cz /= n;
-
-    // ── 2. Plane normal via Newell's method ──
-    var nx = 0, ny = 0, nz = 0;
-    for (var i = 0; i < n; i++) {
-      var j   = (i + 1) % n;
-      var dxi = pts[i].x - cx, dyi = pts[i].y - cy, dzi = pts[i].z - cz;
-      var dxj = pts[j].x - cx, dyj = pts[j].y - cy, dzj = pts[j].z - cz;
-      nx += dyi * dzj - dzi * dyj;
-      ny += dzi * dxj - dxi * dzj;
-      nz += dxi * dyj - dyi * dxj;
-    }
-    var nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    if (nLen < 1e-10) return false;
-    var normal = new THREE.Vector3(nx / nLen, ny / nLen, nz / nLen);
-
-    // ── 3. Orthonormal basis on the plane ──
-    var up    = Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
-    var axisU = new THREE.Vector3().crossVectors(normal, up).normalize();
-    var axisV = new THREE.Vector3().crossVectors(normal, axisU).normalize();
-
-    // ── 4. Project to 2-D & compute sectors ──
-    var NUM_SECTORS = 12;
-    var sectorAngle = (2 * Math.PI) / NUM_SECTORS;
-    var sectors     = [];
-    var totalDist   = 0;
-
-    for (var i = 0; i < n; i++) {
-      var dx = pts[i].x - cx, dy = pts[i].y - cy, dz = pts[i].z - cz;
-      var u  = axisU.x * dx + axisU.y * dy + axisU.z * dz;
-      var v  = axisV.x * dx + axisV.y * dy + axisV.z * dz;
-      totalDist += Math.sqrt(u * u + v * v);
-      var angle  = Math.atan2(v, u); // -PI to PI
-      var sector = Math.floor(((angle + Math.PI) / sectorAngle)) % NUM_SECTORS;
-      sectors.push(sector);
-    }
-
-    // ── 5. Average radius check ──
-    var avgRadius = totalDist / n;
-    if (avgRadius < this.data.circleMinRadius) return false;
-
-    // ── 6. Deduplicate consecutive same-sector entries ──
-    var seq = [sectors[0]];
-    for (var i = 1; i < n; i++) {
-      if (sectors[i] !== seq[seq.length - 1]) {
-        seq.push(sectors[i]);
+  _removeHitboxes: function () {
+    if (!this._hitboxEls) return;
+    for (var i = 0; i < this._hitboxEls.length; i++) {
+      if (this._hitboxEls[i].parentNode) {
+        this._hitboxEls[i].parentNode.removeChild(this._hitboxEls[i]);
       }
     }
-
-    // ── 7. Count transitions: forward (+1), backward (-1), or bad ──
-    var fwd = 0, bwd = 0, bad = 0;
-    for (var i = 1; i < seq.length; i++) {
-      var diff = (seq[i] - seq[i - 1] + NUM_SECTORS) % NUM_SECTORS;
-      if (diff === 1)                    fwd++;
-      else if (diff === NUM_SECTORS - 1) bwd++;  // −1 mod 8 = 7
-      else                               bad++;
-    }
-
-    // ── 8. Validate ──
-    var dominant = Math.max(fwd, bwd);
-    if (bad > 0)       return false; // zero non-sequential jumps allowed
-    if (dominant < 10) return false; // need at least 10 clean steps (one full loop)
-
-    // Check all 12 sectors visited
-    var visited = {};
-    for (var i = 0; i < n; i++) visited[sectors[i]] = true;
-    if (Object.keys(visited).length < 12) return false;
-
-    // ── All checks passed ──
-    return {
-      radius: avgRadius,
-      center: new THREE.Vector3(cx, cy, cz),
-    };
+    this._hitboxEls = [];
   },
 
 });
