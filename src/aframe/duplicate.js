@@ -93,17 +93,29 @@ AFRAME.registerComponent('duplicate', {
     const relScale = new THREE.Vector3();
     const group = new THREE.Group();
 
+    // Store for setInstanceScale()
+    this._instancePositions = positions;
+    this._instanceMeshMeta  = [];
+
     meshes.forEach(({ geometry, material, relMatrix }) => {
       relMatrix.decompose(relPos, relQuat, relScale);
+      // Deep-copy so stored values are independent of the temp vars
+      const meta = {
+        pos:   relPos.clone(),
+        quat:  relQuat.clone(),
+        scale: relScale.clone(),
+      };
       const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
       positions.forEach(({ x, y, z }, i) => {
-        dummy.position.set(x + relPos.x, y + relPos.y, z + relPos.z);
-        dummy.quaternion.copy(relQuat);
-        dummy.scale.copy(relScale);
+        dummy.position.set(x + meta.pos.x, y + meta.pos.y, z + meta.pos.z);
+        dummy.quaternion.copy(meta.quat);
+        dummy.scale.copy(meta.scale);
         dummy.updateMatrix();
         instancedMesh.setMatrixAt(i, dummy.matrix);
       });
       instancedMesh.instanceMatrix.needsUpdate = true;
+      meta.instancedMesh = instancedMesh;
+      this._instanceMeshMeta.push(meta);
       group.add(instancedMesh);
     });
 
@@ -116,6 +128,30 @@ AFRAME.registerComponent('duplicate', {
     if (modelObj) modelObj.visible = false;
     this.instancedGroup = group;
     this.el.object3D.add(group);
+  },
+
+  /**
+   * Set the uniform scale of a specific instance across all sub-meshes.
+   * @param {number} index  - Instance index (0 … rows*cols-1)
+   * @param {number} scale  - Uniform scale multiplier applied on top of the original mesh scale
+   */
+  setInstanceScale: function (index, scale) {
+    if (!this._instanceMeshMeta || !this._instancePositions) return;
+    const { x, y, z } = this._instancePositions[index];
+    const dummy = new THREE.Object3D();
+
+    this._instanceMeshMeta.forEach((meta) => {
+      dummy.position.set(x + meta.pos.x, y + meta.pos.y, z + meta.pos.z);
+      dummy.quaternion.copy(meta.quat);
+      dummy.scale.set(
+        meta.scale.x * scale,
+        meta.scale.y * scale,
+        meta.scale.z * scale,
+      );
+      dummy.updateMatrix();
+      meta.instancedMesh.setMatrixAt(index, dummy.matrix);
+      meta.instancedMesh.instanceMatrix.needsUpdate = true;
+    });
   },
 
   remove: function () {

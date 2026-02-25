@@ -18,6 +18,12 @@
   }
 
   const allAssetsLoaded = ref(false);
+
+  setTimeout(() => {
+    const hillEl = document.getElementById('hill-el');
+    const duplicates = hillEl.components['duplicate']
+    console.log(duplicates.setInstanceScale(5, 0.5));
+  }, 4000);
 </script>
 
 <template>
@@ -44,6 +50,7 @@
 
       <a-entity data-role="nav-mesh">
         <a-entity
+          id="hill-el"
           position="0 -.5 -6.5"
           duplicate="gltf: #hill-glb; entropy: 1; gap: 0; rows: 5; cols: 5;"
           gltf-model="#hill-glb"
