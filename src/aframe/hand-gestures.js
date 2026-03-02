@@ -52,11 +52,10 @@ var RIBBON_FRAG = /* glsl */`
 
 AFRAME.registerComponent('hand-gestures', {
   schema: {
-    debug:           { type: 'boolean',  default: true },
-    trail:           { type: 'boolean',  default: true  },
-    trailColor:      { type: 'color',    default: '#ffd700' },
-    trailFade:       { type: 'number',   default: 1000 },
-    camera:          { type: 'selector', default: '[camera]' },
+    debug:           { type: 'boolean', default: true },
+    trail:           { type: 'boolean', default: true  },
+    trailColor:      { type: 'color',   default: '#ffd700' },
+    trailFade:       { type: 'number',  default: 1000 },
   },
 
   init: function () {
@@ -395,10 +394,10 @@ AFRAME.registerComponent('hand-gestures', {
     this._jointMatrix.fromArray(jointPoses, 0 * 16);
     this._hitboxCenter.setFromMatrixPosition(this._jointMatrix);
 
-    // Camera yaw: get world -Z direction of the camera, project onto XZ plane
-    var camEl = this.data.camera;
-    if (camEl) camEl.object3D.getWorldDirection(this._camDir);
-    var camYaw = camEl ? Math.atan2(this._camDir.x, -this._camDir.z) : 0;
+    // Camera yaw: use sceneEl.camera (the actual THREE.js camera updated by XR pose)
+    var cam = this.el.sceneEl.camera;
+    if (cam) cam.getWorldDirection(this._camDir);
+    var camYaw = cam ? Math.atan2(this._camDir.x, -this._camDir.z) : 0;
     var cosY = Math.cos(camYaw);
     var sinY = Math.sin(camYaw);
 
