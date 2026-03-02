@@ -14,8 +14,9 @@ var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 // Hitbox ring config
 var NUM_HITBOXES      = 12;        // boxes arranged in a circle
 var HITBOX_RADIUS     = 0.08;      // circle radius (m) around center
-var HITBOX_SIZE       = 0.02;      // a-box edge size (m)
-var HITBOX_HIT_DIST   = 0.025;     // collision threshold (m)
+var HITBOX_SIZE       = 0.025;     // thin dimension (X and Y) in meters
+var HITBOX_DEPTH      = 0.35;      // long dimension (Z, toward fingers) in meters
+var HITBOX_HIT_DIST   = 0.025;     // (unused — replaced by AABB test)
 var HITBOX_COLOR      = '#4488ff'; // default color
 var HITBOX_HIT_COLOR  = '#ff4444'; // color when hit
 var HITBOX_HIT_MS     = 1000;      // ms to show hit color
@@ -97,7 +98,7 @@ AFRAME.registerComponent('hand-gestures', {
     this._hitboxHitUntil = [];  // per-box timestamp: when to revert color
     this._hitboxCenter   = new THREE.Vector3();
 
-    var sharedGeo = new THREE.BoxGeometry(HITBOX_SIZE, HITBOX_SIZE, HITBOX_SIZE);
+    var sharedGeo = new THREE.BoxGeometry(HITBOX_SIZE, HITBOX_SIZE, HITBOX_DEPTH);
 
     for (var h = 0; h < NUM_HITBOXES; h++) {
       var angle = (2 * Math.PI * h) / NUM_HITBOXES;
@@ -393,8 +394,12 @@ AFRAME.registerComponent('hand-gestures', {
       // rotation stays at identity (world-upright)
       mesh.visible = true;
 
-      // Hit detection
-      if (this._tipPosition.distanceTo(mesh.position) < HITBOX_HIT_DIST) {
+      // Hit detection — AABB test (matches the actual box shape)
+      var dx = Math.abs(this._tipPosition.x - mesh.position.x);
+      var dy = Math.abs(this._tipPosition.y - mesh.position.y);
+      var dz = Math.abs(this._tipPosition.z - mesh.position.z);
+      var hit = dx < HITBOX_SIZE * 0.5 && dy < HITBOX_SIZE * 0.5 && dz < HITBOX_DEPTH * 0.5;
+      if (hit) {
         if (this._hitboxHitUntil[i] === 0) {
           mesh.material.color.set(HITBOX_HIT_COLOR);
           this._hitboxHitUntil[i] = t + HITBOX_HIT_MS;
