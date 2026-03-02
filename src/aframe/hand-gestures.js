@@ -22,9 +22,10 @@ var HITBOX_HIT_COLOR  = '#ff4444'; // color when hit
 var HITBOX_HIT_MS     = 1000;      // ms to show hit color
 
 // Circle gesture detection
-var CIRCLE_WINDOW_MS  = 3500;  // time window to complete a circle
-var CIRCLE_MIN_HITS   = 6;     // min hitboxes touched (out of 12) to trigger
-var CIRCLE_COOLDOWN   = 2000;  // ms between consecutive circle emits
+var CIRCLE_WINDOW_MS      = 2500;  // time window to complete a circle
+var CIRCLE_MIN_HITS       = 6;     // min hitboxes touched (out of 12) to trigger
+var CIRCLE_COOLDOWN       = 2000;  // ms between consecutive circle emits
+var CIRCLE_INACTIVITY_MS  = 800;   // if no new hit for this long, reset history
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
@@ -105,7 +106,8 @@ AFRAME.registerComponent('hand-gestures', {
     this._hitboxCenter   = new THREE.Vector3();
 
     // Circle detection state
-    this._circleLastEmit = 0;
+    this._circleLastEmit    = 0;
+    this._hitboxLastAnyHit  = 0;  // timestamp of the most recent hit on any box
 
     var sharedGeo = new THREE.BoxGeometry(HITBOX_SIZE, HITBOX_SIZE, HITBOX_DEPTH);
 
@@ -412,6 +414,7 @@ AFRAME.registerComponent('hand-gestures', {
       var hit = dx < HITBOX_SIZE * 0.5 && dy < HITBOX_SIZE * 0.5 && dz < HITBOX_DEPTH * 0.5;
       if (hit) {
         this._hitboxLastHit[i] = t;   // record for circle detection
+        this._hitboxLastAnyHit = t;   // global last hit timestamp
         if (this._hitboxHitUntil[i] === 0) {
           mesh.material.color.set(HITBOX_HIT_COLOR);
           this._hitboxHitUntil[i] = t + HITBOX_HIT_MS;
@@ -426,22 +429,33 @@ AFRAME.registerComponent('hand-gestures', {
     }
 
     // ── Circle detection ──
-    if (t - this._circleLastEmit > CIRCLE_COOLDOWN) {
-      var recentHits = 0;
-      for (var j = 0; j < NUM_HITBOXES; j++) {
-        if (this._hitboxLastHit[j] > 0 && t - this._hitboxLastHit[j] < CIRCLE_WINDOW_MS) {
-          recentHits++;
-        }
+    var dbg = document.querySelector('#debug-text');
+
+    // Reset history if hand stopped moving for too long (prevents stale hit accumulation)
+    if (this._hitboxLastAnyHit > 0 && t - this._hitboxLastAnyHit > CIRCLE_INACTIVITY_MS) {
+      for (var r = 0; r < NUM_HITBOXES; r++) { this._hitboxLastHit[r] = 0; }
+      this._hitboxLastAnyHit = 0;
+    }
+
+    // Count hits within window
+    var recentHits = 0;
+    for (var j = 0; j < NUM_HITBOXES; j++) {
+      if (this._hitboxLastHit[j] > 0 && t - this._hitboxLastHit[j] < CIRCLE_WINDOW_MS) {
+        recentHits++;
       }
-      if (recentHits > 0) console.log('[circle] recent hits:', recentHits, '/', NUM_HITBOXES);
-      if (recentHits >= CIRCLE_MIN_HITS) {
-        this._circleLastEmit = t;
-        // Reset hit history so the gesture can be done again
-        for (var k = 0; k < NUM_HITBOXES; k++) { this._hitboxLastHit[k] = 0; }
-        this.el.emit('circle-shape', {});
-        var self = this;
-        setTimeout(function () { self.el.emit('circle-shape-end', {}); }, 1000);
-      }
+    }
+
+    // Always update debug display
+    if (dbg) dbg.setAttribute('text', 'value', 'circle: ' + recentHits + ' / ' + NUM_HITBOXES + ' (need ' + CIRCLE_MIN_HITS + ')');
+
+    if (t - this._circleLastEmit > CIRCLE_COOLDOWN && recentHits >= CIRCLE_MIN_HITS) {
+      this._circleLastEmit = t;
+      this._hitboxLastAnyHit = 0;
+      for (var k = 0; k < NUM_HITBOXES; k++) { this._hitboxLastHit[k] = 0; }
+      if (dbg) dbg.setAttribute('text', 'value', '*** CIRCLE! ***');
+      this.el.emit('circle-shape', {});
+      var self = this;
+      setTimeout(function () { self.el.emit('circle-shape-end', {}); }, 1000);
     }
   },
 
