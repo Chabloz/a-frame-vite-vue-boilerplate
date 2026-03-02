@@ -13,13 +13,18 @@ var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 
 // Hitbox ring config
 var NUM_HITBOXES      = 12;        // boxes arranged in a circle
-var HITBOX_RADIUS     = 0.08;      // circle radius (m) around center
+var HITBOX_RADIUS     = 0.08;       // circle radius (m) around center
 var HITBOX_SIZE       = 0.025;     // thin dimension (X and Y) in meters
 var HITBOX_DEPTH      = 0.35;      // long dimension (Z, toward fingers) in meters
 var HITBOX_HIT_DIST   = 0.025;     // (unused — replaced by AABB test)
 var HITBOX_COLOR      = '#4488ff'; // default color
 var HITBOX_HIT_COLOR  = '#ff4444'; // color when hit
 var HITBOX_HIT_MS     = 1000;      // ms to show hit color
+
+// Circle gesture detection
+var CIRCLE_WINDOW_MS  = 3500;  // time window to complete a circle
+var CIRCLE_MIN_HITS   = 6;     // min hitboxes touched (out of 12) to trigger
+var CIRCLE_COOLDOWN   = 2000;  // ms between consecutive circle emits
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
@@ -96,7 +101,11 @@ AFRAME.registerComponent('hand-gestures', {
     this._hitboxMeshes   = [];
     this._hitboxOffsets  = [];  // precomputed { x, y } offsets in world XY plane
     this._hitboxHitUntil = [];  // per-box timestamp: when to revert color
+    this._hitboxLastHit  = [];  // per-box timestamp: most recent hit (for circle detection)
     this._hitboxCenter   = new THREE.Vector3();
+
+    // Circle detection state
+    this._circleLastEmit = 0;
 
     var sharedGeo = new THREE.BoxGeometry(HITBOX_SIZE, HITBOX_SIZE, HITBOX_DEPTH);
 
@@ -121,6 +130,7 @@ AFRAME.registerComponent('hand-gestures', {
 
       this._hitboxMeshes.push(mesh);
       this._hitboxHitUntil.push(0);
+      this._hitboxLastHit.push(0);
     }
 
     if (this.data.debug) this._createInstancedMesh();
@@ -386,10 +396,11 @@ AFRAME.registerComponent('hand-gestures', {
       var offset = this._hitboxOffsets[i];
 
       // Place in world XY plane — always upright, rotation-free
+      // Z offset: box starts at wrist and extends fully forward (-Z in WebXR)
       mesh.position.set(
         this._hitboxCenter.x + offset.x,
         this._hitboxCenter.y + offset.y,
-        this._hitboxCenter.z
+        this._hitboxCenter.z - HITBOX_DEPTH * 0.5
       );
       // rotation stays at identity (world-upright)
       mesh.visible = true;
@@ -400,6 +411,7 @@ AFRAME.registerComponent('hand-gestures', {
       var dz = Math.abs(this._tipPosition.z - mesh.position.z);
       var hit = dx < HITBOX_SIZE * 0.5 && dy < HITBOX_SIZE * 0.5 && dz < HITBOX_DEPTH * 0.5;
       if (hit) {
+        this._hitboxLastHit[i] = t;   // record for circle detection
         if (this._hitboxHitUntil[i] === 0) {
           mesh.material.color.set(HITBOX_HIT_COLOR);
           this._hitboxHitUntil[i] = t + HITBOX_HIT_MS;
@@ -410,6 +422,25 @@ AFRAME.registerComponent('hand-gestures', {
       if (this._hitboxHitUntil[i] > 0 && t > this._hitboxHitUntil[i]) {
         mesh.material.color.set(HITBOX_COLOR);
         this._hitboxHitUntil[i] = 0;
+      }
+    }
+
+    // ── Circle detection ──
+    if (t - this._circleLastEmit > CIRCLE_COOLDOWN) {
+      var recentHits = 0;
+      for (var j = 0; j < NUM_HITBOXES; j++) {
+        if (this._hitboxLastHit[j] > 0 && t - this._hitboxLastHit[j] < CIRCLE_WINDOW_MS) {
+          recentHits++;
+        }
+      }
+      if (recentHits > 0) console.log('[circle] recent hits:', recentHits, '/', NUM_HITBOXES);
+      if (recentHits >= CIRCLE_MIN_HITS) {
+        this._circleLastEmit = t;
+        // Reset hit history so the gesture can be done again
+        for (var k = 0; k < NUM_HITBOXES; k++) { this._hitboxLastHit[k] = 0; }
+        this.el.emit('circle-shape', {});
+        var self = this;
+        setTimeout(function () { self.el.emit('circle-shape-end', {}); }, 1000);
       }
     }
   },
