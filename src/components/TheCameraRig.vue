@@ -17,14 +17,7 @@
         id="head"
         camera
         position="0 1.65 0"
-      >
-        <!-- VR debug HUD — follows the camera -->
-        <a-entity
-          id="debug-text"
-          position="0 -0.3 -0.6"
-          text="value: debug...; color: #00ff00; align: center; width: 1.2"
-        ></a-entity>
-      </a-entity>
+      ></a-entity>
 
       <a-entity
         id="hand-left"

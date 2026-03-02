@@ -52,16 +52,18 @@ var RIBBON_FRAG = /* glsl */`
 
 AFRAME.registerComponent('hand-gestures', {
   schema: {
-    debug:           { type: 'boolean', default: true },
-    trail:           { type: 'boolean', default: true  },
-    trailColor:      { type: 'color',   default: '#ffd700' },
-    trailFade:       { type: 'number',  default: 1000 },
+    debug:           { type: 'boolean',  default: true },
+    trail:           { type: 'boolean',  default: true  },
+    trailColor:      { type: 'color',    default: '#ffd700' },
+    trailFade:       { type: 'number',   default: 1000 },
+    camera:          { type: 'selector', default: '[camera]' },
   },
 
   init: function () {
     this._jointMatrix = new THREE.Matrix4();
     this._tipPosition = new THREE.Vector3();
     this._dummy       = new THREE.Object3D();
+    this._camDir      = new THREE.Vector3(); // reusable — camera world direction for yaw
 
     this._instancedMesh = null;
 
@@ -393,25 +395,39 @@ AFRAME.registerComponent('hand-gestures', {
     this._jointMatrix.fromArray(jointPoses, 0 * 16);
     this._hitboxCenter.setFromMatrixPosition(this._jointMatrix);
 
+    // Camera yaw: get world -Z direction of the camera, project onto XZ plane
+    var camEl = this.data.camera;
+    if (camEl) camEl.object3D.getWorldDirection(this._camDir);
+    var camYaw = camEl ? Math.atan2(this._camDir.x, -this._camDir.z) : 0;
+    var cosY = Math.cos(camYaw);
+    var sinY = Math.sin(camYaw);
+
     for (var i = 0; i < this._hitboxMeshes.length; i++) {
       var mesh   = this._hitboxMeshes[i];
       var offset = this._hitboxOffsets[i];
 
-      // Place in world XY plane — always upright, rotation-free
-      // Z offset: box starts at wrist and extends fully forward (-Z in WebXR)
+      // Rotate ring offset (XY plane) around Y by camera yaw,
+      // then push the box center half its depth along camera -Z
       mesh.position.set(
-        this._hitboxCenter.x + offset.x,
+        this._hitboxCenter.x + offset.x * cosY + sinY * HITBOX_DEPTH * 0.5,
         this._hitboxCenter.y + offset.y,
-        this._hitboxCenter.z - HITBOX_DEPTH * 0.5
+        this._hitboxCenter.z - offset.x * sinY + cosY * (-HITBOX_DEPTH * 0.5)
       );
-      // rotation stays at identity (world-upright)
+      mesh.rotation.y = camYaw;
       mesh.visible = true;
 
-      // Hit detection — AABB test (matches the actual box shape)
-      var dx = Math.abs(this._tipPosition.x - mesh.position.x);
-      var dy = Math.abs(this._tipPosition.y - mesh.position.y);
-      var dz = Math.abs(this._tipPosition.z - mesh.position.z);
-      var hit = dx < HITBOX_SIZE * 0.5 && dy < HITBOX_SIZE * 0.5 && dz < HITBOX_DEPTH * 0.5;
+      // OBB test: project relative tip onto box local axes (rotated by camYaw around Y)
+      //   local X = ( cosY, 0, -sinY)  — thin
+      //   local Y = (0,    1,  0)      — thin
+      //   local Z = ( sinY, 0,  cosY)  — deep (toward camera)
+      var rx = this._tipPosition.x - mesh.position.x;
+      var ry = this._tipPosition.y - mesh.position.y;
+      var rz = this._tipPosition.z - mesh.position.z;
+      var localX =  rx * cosY - rz * sinY;
+      var localZ =  rx * sinY + rz * cosY;
+      var hit = Math.abs(localX) < HITBOX_SIZE  * 0.5 &&
+                Math.abs(ry)     < HITBOX_SIZE  * 0.5 &&
+                Math.abs(localZ) < HITBOX_DEPTH * 0.5;
       if (hit) {
         this._hitboxLastHit[i] = t;   // record for circle detection
         this._hitboxLastAnyHit = t;   // global last hit timestamp
