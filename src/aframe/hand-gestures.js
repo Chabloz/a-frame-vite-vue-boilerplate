@@ -13,9 +13,9 @@ var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 
 // Hitbox ring config
 var NUM_HITBOXES      = 12;        // boxes arranged in a circle
-var HITBOX_RADIUS     = 0.08;      // circle radius (m) around center
-var HITBOX_SIZE       = 0.02;      // a-box edge size (m)
-var HITBOX_HIT_DIST   = 0.025;     // collision threshold (m)
+var HITBOX_RADIUS     = 0.2;      // circle radius (m) around center
+var HITBOX_SIZE       = 0.05;      // a-box edge size (m)
+var HITBOX_HIT_DIST   = 0.05;     // collision threshold (m)
 var HITBOX_COLOR      = '#4488ff'; // default color
 var HITBOX_HIT_COLOR  = '#ff4444'; // color when hit
 var HITBOX_HIT_MS     = 1000;      // ms to show hit color
@@ -98,7 +98,7 @@ AFRAME.registerComponent('hand-gestures', {
 
     for (var h = 0; h < NUM_HITBOXES; h++) {
       var angle = (2 * Math.PI * h) / NUM_HITBOXES;
-      var hx = HITBOX_RADIUS * Math.cos(angle);
+      var hx = HITBOX_RADIUS * Math.cos(angle);4
       var hy = HITBOX_RADIUS * Math.sin(angle);
 
       var box = document.createElement('a-box');

@@ -21,13 +21,15 @@
 
       <a-entity
         id="hand-left"
-        hand-tracking-controls="hand: left; modelOpacity: 0.5"
+        hand-controls="hand: left"
+        _hand-tracking-controls="hand: left; modelOpacity: 0.5"
         hand-gestures
       ></a-entity>
 
       <a-entity
         id="hand-right"
-        hand-tracking-controls="hand: right; modelOpacity: 0.5"
+        hand-controls="hand: right"
+        _hand-tracking-controls="hand: right; modelOpacity: 0.5"
         hand-gestures
       ></a-entity>
 
