@@ -13,9 +13,9 @@ var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 
 // Hitbox ring config
 var NUM_HITBOXES      = 12;        // boxes arranged in a circle
-var HITBOX_RADIUS     = 0.2;      // circle radius (m) around center
-var HITBOX_SIZE       = 0.05;      // a-box edge size (m)
-var HITBOX_HIT_DIST   = 0.05;     // collision threshold (m)
+var HITBOX_RADIUS     = 0.08;      // circle radius (m) around center
+var HITBOX_SIZE       = 0.02;      // a-box edge size (m)
+var HITBOX_HIT_DIST   = 0.025;     // collision threshold (m)
 var HITBOX_COLOR      = '#4488ff'; // default color
 var HITBOX_HIT_COLOR  = '#ff4444'; // color when hit
 var HITBOX_HIT_MS     = 1000;      // ms to show hit color
@@ -45,7 +45,7 @@ var RIBBON_FRAG = /* glsl */`
 
 AFRAME.registerComponent('hand-gestures', {
   schema: {
-    debug:           { type: 'boolean', default: false },
+    debug:           { type: 'boolean', default: true },
     trail:           { type: 'boolean', default: true  },
     trailColor:      { type: 'color',   default: '#ffd700' },
     trailFade:       { type: 'number',  default: 1000 },
@@ -91,27 +91,34 @@ AFRAME.registerComponent('hand-gestures', {
     this._prevTipPos      = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
     this._visibleHistory  = 0;     // how many curve points are actually drawn
 
-    // ── Hitbox ring (real a-box entities, children of the hand) ──
-    this._hitboxEls     = [];
-    this._hitboxHitUntil = [];   // per-box timestamp: when to revert color
-    this._hitboxWorldPos = new THREE.Vector3();
+    // ── Hitbox ring — Three.js meshes in WORLD space (position tracks hand, no rotation) ──
+    this._hitboxMeshes   = [];
+    this._hitboxOffsets  = [];  // precomputed { x, y } offsets in world XY plane
+    this._hitboxHitUntil = [];  // per-box timestamp: when to revert color
+    this._hitboxCenter   = new THREE.Vector3();
+
+    var sharedGeo = new THREE.BoxGeometry(HITBOX_SIZE, HITBOX_SIZE, HITBOX_SIZE);
 
     for (var h = 0; h < NUM_HITBOXES; h++) {
       var angle = (2 * Math.PI * h) / NUM_HITBOXES;
-      var hx = HITBOX_RADIUS * Math.cos(angle);4
-      var hy = HITBOX_RADIUS * Math.sin(angle);
+      this._hitboxOffsets.push({
+        x: HITBOX_RADIUS * Math.cos(angle),
+        y: HITBOX_RADIUS * Math.sin(angle)
+      });
 
-      var box = document.createElement('a-box');
-      box.setAttribute('width',  HITBOX_SIZE);
-      box.setAttribute('height', HITBOX_SIZE);
-      box.setAttribute('depth',  HITBOX_SIZE);
-      box.setAttribute('position', hx.toFixed(4) + ' ' + hy.toFixed(4) + ' -0.15');
-      box.setAttribute('color', HITBOX_COLOR);
-      box.setAttribute('opacity', '0.6');
-      box.setAttribute('data-hitbox-index', h);
-      this.el.appendChild(box);
+      var mat  = new THREE.MeshBasicMaterial({
+        color:       HITBOX_COLOR,
+        transparent: true,
+        opacity:     0.6,
+        wireframe:   false,
+        depthTest:   false
+      });
+      var mesh = new THREE.Mesh(sharedGeo, mat);
+      mesh.visible       = false;   // hidden until hand is tracked
+      mesh.frustumCulled = false;
+      this.el.sceneEl.object3D.add(mesh);
 
-      this._hitboxEls.push(box);
+      this._hitboxMeshes.push(mesh);
       this._hitboxHitUntil.push(0);
     }
 
@@ -310,8 +317,11 @@ AFRAME.registerComponent('hand-gestures', {
       }
     }
 
-    // ── No hand data ──
+    // ── No hand data — hide hitboxes ──
     if (!hasPoses) {
+      for (var h = 0; h < this._hitboxMeshes.length; h++) {
+        this._hitboxMeshes[h].visible = false;
+      }
       if (this._ribbonMesh) {
         // Decay speed to 0 so ribbon fades out
         this._speed = this._speed * (1 - SPEED_EMA);
@@ -322,6 +332,7 @@ AFRAME.registerComponent('hand-gestures', {
       }
       return;
     }
+
 
     // ── Get current index fingertip world position ──
     this._jointMatrix.fromArray(jointPoses, INDEX_TIP_BONE * 16);
@@ -354,7 +365,7 @@ AFRAME.registerComponent('hand-gestures', {
     }
 
     // ── Hitbox collision ──
-    this._checkHitboxes(t);
+    this._checkHitboxes(t, jointPoses);
   },
 
   remove: function () {
@@ -364,35 +375,51 @@ AFRAME.registerComponent('hand-gestures', {
   },
 
   // ── Hitbox collision detection ─────────────────────────────────────────
-  _checkHitboxes: function (t) {
-    for (var i = 0; i < this._hitboxEls.length; i++) {
-      var hb = this._hitboxEls[i];
-      hb.object3D.getWorldPosition(this._hitboxWorldPos);
+  _checkHitboxes: function (t, jointPoses) {
+    // Center of the ring = wrist joint world position (joint 0)
+    this._jointMatrix.fromArray(jointPoses, 0 * 16);
+    this._hitboxCenter.setFromMatrixPosition(this._jointMatrix);
+
+    for (var i = 0; i < this._hitboxMeshes.length; i++) {
+      var mesh   = this._hitboxMeshes[i];
+      var offset = this._hitboxOffsets[i];
+
+      // Place in world XY plane — always upright, rotation-free
+      mesh.position.set(
+        this._hitboxCenter.x + offset.x,
+        this._hitboxCenter.y + offset.y,
+        this._hitboxCenter.z
+      );
+      // rotation stays at identity (world-upright)
+      mesh.visible = true;
 
       // Hit detection
-      if (this._tipPosition.distanceTo(this._hitboxWorldPos) < HITBOX_HIT_DIST) {
+      if (this._tipPosition.distanceTo(mesh.position) < HITBOX_HIT_DIST) {
         if (this._hitboxHitUntil[i] === 0) {
-          hb.setAttribute('color', HITBOX_HIT_COLOR);
+          mesh.material.color.set(HITBOX_HIT_COLOR);
           this._hitboxHitUntil[i] = t + HITBOX_HIT_MS;
         }
       }
 
       // Revert color after timer
       if (this._hitboxHitUntil[i] > 0 && t > this._hitboxHitUntil[i]) {
-        hb.setAttribute('color', HITBOX_COLOR);
+        mesh.material.color.set(HITBOX_COLOR);
         this._hitboxHitUntil[i] = 0;
       }
     }
   },
 
   _removeHitboxes: function () {
-    if (!this._hitboxEls) return;
-    for (var i = 0; i < this._hitboxEls.length; i++) {
-      if (this._hitboxEls[i].parentNode) {
-        this._hitboxEls[i].parentNode.removeChild(this._hitboxEls[i]);
-      }
+    for (var i = 0; i < this._hitboxMeshes.length; i++) {
+      var mesh = this._hitboxMeshes[i];
+      this.el.sceneEl.object3D.remove(mesh);
+      mesh.material.dispose();
+      // geometry is shared, disposed once via the first mesh
     }
-    this._hitboxEls = [];
+    if (this._hitboxMeshes.length > 0) {
+      this._hitboxMeshes[0].geometry.dispose();
+    }
+    this._hitboxMeshes = [];
   },
 
 });
