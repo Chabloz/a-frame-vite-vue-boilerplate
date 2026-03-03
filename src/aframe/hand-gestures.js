@@ -11,21 +11,15 @@ var SPEED_MIN         = 0.25;  // m/s — below this speed ribbon is invisible
 var SPEED_MAX         = 1.2;   // m/s — above this speed ribbon is at full length
 var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
 
-// Hitbox ring config
-var NUM_HITBOXES      = 12;        // boxes arranged in a circle
-var HITBOX_RADIUS     = 0.08;       // circle radius (m) around center
-var HITBOX_SIZE       = 0.025;     // thin dimension (X and Y) in meters
-var HITBOX_DEPTH      = 0.35;      // long dimension (Z, toward fingers) in meters
-var HITBOX_HIT_DIST   = 0.025;     // (unused — replaced by AABB test)
-var HITBOX_COLOR      = '#4488ff'; // default color
-var HITBOX_HIT_COLOR  = '#ff4444'; // color when hit
-var HITBOX_HIT_MS     = 1000;      // ms to show hit color
-
-// Circle gesture detection
-var CIRCLE_WINDOW_MS      = 2500;  // time window to complete a circle
-var CIRCLE_MIN_HITS       = 6;     // min hitboxes touched (out of 12) to trigger
+// Circle gesture detection (from ribbon trail points)
+var CIRCLE_MIN_POINTS     = 12;    // minimum trail points to attempt detection
+var CIRCLE_RADIUS_MIN     = 0.03;  // min average radius (m) to count as a circle
+var CIRCLE_RADIUS_MAX     = 0.25;  // max average radius (m)
+var CIRCLE_VARIANCE_MAX   = 0.30;  // max allowed coefficient of variation (stddev/mean)
+var CIRCLE_ANGLE_COVERAGE = 4.5;   // min |net signed| angular coverage in radians (~258°)
+var CIRCLE_DIR_RATIO      = 0.75;  // at least 75% of angular deltas must agree in direction
 var CIRCLE_COOLDOWN       = 2000;  // ms between consecutive circle emits
-var CIRCLE_INACTIVITY_MS  = 800;   // if no new hit for this long, reset history
+var CIRCLE_CHECK_INTERVAL = 150;   // ms between detection checks (perf)
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
@@ -62,7 +56,6 @@ AFRAME.registerComponent('hand-gestures', {
     this._jointMatrix = new THREE.Matrix4();
     this._tipPosition = new THREE.Vector3();
     this._dummy       = new THREE.Object3D();
-    this._camDir      = new THREE.Vector3(); // reusable — camera world direction for yaw
 
     this._instancedMesh = null;
 
@@ -99,42 +92,9 @@ AFRAME.registerComponent('hand-gestures', {
     this._prevTipPos      = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
     this._visibleHistory  = 0;     // how many curve points are actually drawn
 
-    // ── Hitbox ring — Three.js meshes in WORLD space (position tracks hand, no rotation) ──
-    this._hitboxMeshes   = [];
-    this._hitboxOffsets  = [];  // precomputed { x, y } offsets in world XY plane
-    this._hitboxHitUntil = [];  // per-box timestamp: when to revert color
-    this._hitboxLastHit  = [];  // per-box timestamp: most recent hit (for circle detection)
-    this._hitboxCenter   = new THREE.Vector3();
-
-    // Circle detection state
-    this._circleLastEmit    = 0;
-    this._hitboxLastAnyHit  = 0;  // timestamp of the most recent hit on any box
-
-    var sharedGeo = new THREE.BoxGeometry(HITBOX_SIZE, HITBOX_SIZE, HITBOX_DEPTH);
-
-    for (var h = 0; h < NUM_HITBOXES; h++) {
-      var angle = (2 * Math.PI * h) / NUM_HITBOXES;
-      this._hitboxOffsets.push({
-        x: HITBOX_RADIUS * Math.cos(angle),
-        y: HITBOX_RADIUS * Math.sin(angle)
-      });
-
-      var mat  = new THREE.MeshBasicMaterial({
-        color:       HITBOX_COLOR,
-        transparent: true,
-        opacity:     0.6,
-        wireframe:   false,
-        depthTest:   false
-      });
-      var mesh = new THREE.Mesh(sharedGeo, mat);
-      mesh.visible       = false;   // hidden until hand is tracked
-      mesh.frustumCulled = false;
-      this.el.sceneEl.object3D.add(mesh);
-
-      this._hitboxMeshes.push(mesh);
-      this._hitboxHitUntil.push(0);
-      this._hitboxLastHit.push(0);
-    }
+    // ── Circle detection state (ribbon-based) ──
+    this._circleLastEmit  = 0;
+    this._circleLastCheck = 0;
 
     if (this.data.debug) this._createInstancedMesh();
     if (this.data.trail) this._createRibbon();
@@ -331,11 +291,8 @@ AFRAME.registerComponent('hand-gestures', {
       }
     }
 
-    // ── No hand data — hide hitboxes ──
+    // ── No hand data ──
     if (!hasPoses) {
-      for (var h = 0; h < this._hitboxMeshes.length; h++) {
-        this._hitboxMeshes[h].visible = false;
-      }
       if (this._ribbonMesh) {
         // Decay speed to 0 so ribbon fades out
         this._speed = this._speed * (1 - SPEED_EMA);
@@ -378,113 +335,120 @@ AFRAME.registerComponent('hand-gestures', {
       }
     }
 
-    // ── Hitbox collision ──
-    this._checkHitboxes(t, jointPoses);
+    // ── Circle gesture detection (ribbon-based) ──
+    this._checkCircle(t);
   },
 
   remove: function () {
     this._destroyInstancedMesh();
     this._destroyRibbon();
-    this._removeHitboxes();
   },
 
-  // ── Hitbox collision detection ─────────────────────────────────────────
-  _checkHitboxes: function (t, jointPoses) {
-    // Center of the ring = wrist joint world position (joint 0)
-    this._jointMatrix.fromArray(jointPoses, 0 * 16);
-    this._hitboxCenter.setFromMatrixPosition(this._jointMatrix);
+  // ── Circle detection from trail control points ─────────────────────────
+  _checkCircle: function (t) {
+    // Throttle: don't run every frame
+    if (t - this._circleLastCheck < CIRCLE_CHECK_INTERVAL) return;
+    this._circleLastCheck = t;
 
-    // Camera yaw: use sceneEl.camera (the actual THREE.js camera updated by XR pose)
-    var cam = this.el.sceneEl.camera;
-    if (cam) cam.getWorldDirection(this._camDir);
-    var camYaw = cam ? Math.atan2(this._camDir.x, -this._camDir.z) : 0;
-    var cosY = Math.cos(camYaw);
-    var sinY = Math.sin(camYaw);
+    // Cooldown between emits
+    if (t - this._circleLastEmit < CIRCLE_COOLDOWN) return;
 
-    for (var i = 0; i < this._hitboxMeshes.length; i++) {
-      var mesh   = this._hitboxMeshes[i];
-      var offset = this._hitboxOffsets[i];
+    var n = this._histCount;
+    if (n < CIRCLE_MIN_POINTS) return;
 
-      // Rotate ring offset (XY plane) around Y by camera yaw,
-      // then push the box center half its depth along camera -Z
-      mesh.position.set(
-        this._hitboxCenter.x + offset.x * cosY + sinY * HITBOX_DEPTH * 0.5,
-        this._hitboxCenter.y + offset.y,
-        this._hitboxCenter.z - offset.x * sinY + cosY * (-HITBOX_DEPTH * 0.5)
-      );
-      mesh.rotation.y = camYaw;
-      mesh.visible = true;
+    var pts = this._curveVecs;
 
-      // OBB test: project relative tip onto box local axes (rotated by camYaw around Y)
-      //   local X = ( cosY, 0, -sinY)  — thin
-      //   local Y = (0,    1,  0)      — thin
-      //   local Z = ( sinY, 0,  cosY)  — deep (toward camera)
-      var rx = this._tipPosition.x - mesh.position.x;
-      var ry = this._tipPosition.y - mesh.position.y;
-      var rz = this._tipPosition.z - mesh.position.z;
-      var localX =  rx * cosY - rz * sinY;
-      var localZ =  rx * sinY + rz * cosY;
-      var hit = Math.abs(localX) < HITBOX_SIZE  * 0.5 &&
-                Math.abs(ry)     < HITBOX_SIZE  * 0.5 &&
-                Math.abs(localZ) < HITBOX_DEPTH * 0.5;
-      if (hit) {
-        this._hitboxLastHit[i] = t;   // record for circle detection
-        this._hitboxLastAnyHit = t;   // global last hit timestamp
-        if (this._hitboxHitUntil[i] === 0) {
-          mesh.material.color.set(HITBOX_HIT_COLOR);
-          this._hitboxHitUntil[i] = t + HITBOX_HIT_MS;
-        }
-      }
+    // 1) Compute centroid of the N most recent points
+    var cx = 0, cy = 0, cz = 0;
+    for (var i = 0; i < n; i++) {
+      cx += pts[i].x; cy += pts[i].y; cz += pts[i].z;
+    }
+    cx /= n; cy /= n; cz /= n;
 
-      // Revert color after timer
-      if (this._hitboxHitUntil[i] > 0 && t > this._hitboxHitUntil[i]) {
-        mesh.material.color.set(HITBOX_COLOR);
-        this._hitboxHitUntil[i] = 0;
-      }
+    // 2) Compute mean radius & std deviation from centroid
+    var sumR = 0, sumR2 = 0;
+    for (var i = 0; i < n; i++) {
+      var dx = pts[i].x - cx;
+      var dy = pts[i].y - cy;
+      var dz = pts[i].z - cz;
+      var r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      sumR  += r;
+      sumR2 += r * r;
+    }
+    var meanR = sumR / n;
+    var variance = (sumR2 / n) - (meanR * meanR);
+    var stddev = Math.sqrt(Math.max(0, variance));
+    var cv = (meanR > 0.001) ? (stddev / meanR) : 999;
+
+    // Reject if radius out of range or too irregular
+    if (meanR < CIRCLE_RADIUS_MIN || meanR > CIRCLE_RADIUS_MAX) return;
+    if (cv > CIRCLE_VARIANCE_MAX) return;
+
+    // 3) Best-fit plane via PCA-lite: find the normal of the point cloud
+    //    using the covariance matrix and picking the eigenvector with
+    //    the smallest eigenvalue. For speed we use the cross-product of
+    //    two spread vectors (first and middle point from centroid).
+    var midIdx = Math.floor(n / 2);
+    var v1x = pts[0].x - cx, v1y = pts[0].y - cy, v1z = pts[0].z - cz;
+    var v2x = pts[midIdx].x - cx, v2y = pts[midIdx].y - cy, v2z = pts[midIdx].z - cz;
+    var nx = v1y * v2z - v1z * v2y;
+    var ny = v1z * v2x - v1x * v2z;
+    var nz = v1x * v2y - v1y * v2x;
+    var nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    if (nLen < 1e-6) return;
+    nx /= nLen; ny /= nLen; nz /= nLen;
+
+    // Build local 2D basis on the plane: u = normalize(v1), v = cross(n, u)
+    var u1Len = Math.sqrt(v1x * v1x + v1y * v1y + v1z * v1z);
+    if (u1Len < 1e-6) return;
+    var ux = v1x / u1Len, uy = v1y / u1Len, uz = v1z / u1Len;
+    var vx = ny * uz - nz * uy;
+    var vy = nz * ux - nx * uz;
+    var vz = nx * uy - ny * ux;
+
+    // 4) Project points onto 2D plane and compute angular coverage
+    var angles = [];
+    for (var i = 0; i < n; i++) {
+      var px = pts[i].x - cx, py = pts[i].y - cy, pz = pts[i].z - cz;
+      var projU = px * ux + py * uy + pz * uz;
+      var projV = px * vx + py * vy + pz * vz;
+      angles.push(Math.atan2(projV, projU));
     }
 
-    // ── Circle detection ──
-    var dbg = document.querySelector('#debug-text');
-
-    // Reset history if hand stopped moving for too long (prevents stale hit accumulation)
-    if (this._hitboxLastAnyHit > 0 && t - this._hitboxLastAnyHit > CIRCLE_INACTIVITY_MS) {
-      for (var r = 0; r < NUM_HITBOXES; r++) { this._hitboxLastHit[r] = 0; }
-      this._hitboxLastAnyHit = 0;
+    // Signed angular deltas — a real circle accumulates net rotation,
+    // while back-and-forth or zigzag motions cancel out.
+    var signedAngle = 0;
+    var sameDirCount = 0;
+    var totalDeltas  = n - 1;
+    for (var i = 1; i < n; i++) {
+      var da = angles[i] - angles[i - 1];
+      // Wrap to [-PI, PI]
+      if (da > Math.PI)  da -= 2 * Math.PI;
+      if (da < -Math.PI) da += 2 * Math.PI;
+      signedAngle += da;
     }
 
-    // Count hits within window
-    var recentHits = 0;
-    for (var j = 0; j < NUM_HITBOXES; j++) {
-      if (this._hitboxLastHit[j] > 0 && t - this._hitboxLastHit[j] < CIRCLE_WINDOW_MS) {
-        recentHits++;
-      }
-    }
+    var totalAngle = Math.abs(signedAngle);
+    if (totalAngle < CIRCLE_ANGLE_COVERAGE) return;
 
-    // Always update debug display
-    if (dbg) dbg.setAttribute('text', 'value', 'circle: ' + recentHits + ' / ' + NUM_HITBOXES + ' (need ' + CIRCLE_MIN_HITS + ')');
+    // Direction consistency: count deltas agreeing with the dominant direction
+    var sign = signedAngle > 0 ? 1 : -1;
+    for (var i = 1; i < n; i++) {
+      var da = angles[i] - angles[i - 1];
+      if (da > Math.PI)  da -= 2 * Math.PI;
+      if (da < -Math.PI) da += 2 * Math.PI;
+      if (da * sign > 0) sameDirCount++;
+    }
+    var dirRatio = sameDirCount / totalDeltas;
+    if (dirRatio < CIRCLE_DIR_RATIO) return;
 
-    if (t - this._circleLastEmit > CIRCLE_COOLDOWN && recentHits >= CIRCLE_MIN_HITS) {
-      this._circleLastEmit = t;
-      this._hitboxLastAnyHit = 0;
-      for (var k = 0; k < NUM_HITBOXES; k++) { this._hitboxLastHit[k] = 0; }
-      if (dbg) dbg.setAttribute('text', 'value', '*** CIRCLE! ***');
-      this.el.emit('circle-shape', {});
-      var self = this;
-      setTimeout(function () { self.el.emit('circle-shape-end', {}); }, 1000);
-    }
-  },
-
-  _removeHitboxes: function () {
-    for (var i = 0; i < this._hitboxMeshes.length; i++) {
-      var mesh = this._hitboxMeshes[i];
-      this.el.sceneEl.object3D.remove(mesh);
-      mesh.material.dispose();
-      // geometry is shared, disposed once via the first mesh
-    }
-    if (this._hitboxMeshes.length > 0) {
-      this._hitboxMeshes[0].geometry.dispose();
-    }
-    this._hitboxMeshes = [];
+    // ── Circle detected! ──
+    this._circleLastEmit = t;
+    // Flush trail so the same gesture doesn't fire twice
+    this._histCount = 0;
+    this.el.emit('circle-shape', { radius: meanR, coverage: totalAngle });
+    var self = this;
+    setTimeout(function () { self.el.emit('circle-shape-end', {}); }, 1000);
   },
 
 });
