@@ -31,18 +31,6 @@
         event-set="event: circle-shape; attribute: visible; value: true"
         event-set__hide="event: circle-shape-end; attribute: visible; value: false"
       ></a-box>
-
-      <!-- Triangle gesture debug box -->
-      <a-box
-        id="triangle-debug"
-        position="-3 0 -2"
-        color="blue"
-        visible="false"
-        listen-to="target: #hand-right; event: triangle-shape; emit: triangle-shape"
-        listen-to__hide="target: #hand-right; event: triangle-shape-end; emit: triangle-shape-end"
-        event-set="event: triangle-shape; attribute: visible; value: true"
-        event-set__hide="event: triangle-shape-end; attribute: visible; value: false"
-      ></a-box>
     </template>
 
     <TheCameraRig :allAssetsLoaded="allAssetsLoaded"/>

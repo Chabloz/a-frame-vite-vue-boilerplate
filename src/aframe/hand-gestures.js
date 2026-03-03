@@ -22,17 +22,6 @@ var CIRCLE_TURN_CV_MAX    = 0.80;  // max CV of |per-step turning angle| (reject
 var CIRCLE_COOLDOWN       = 2000;  // ms between consecutive circle emits
 var CIRCLE_CHECK_INTERVAL = 150;   // ms between detection checks (perf)
 
-// Triangle gesture detection (from ribbon trail points)
-var TRI_MIN_POINTS      = 15;     // minimum trail points
-var TRI_SIZE_MIN        = 0.03;   // min mean radius from centroid (m)
-var TRI_SIZE_MAX        = 0.30;   // max mean radius
-var TRI_CLOSURE_RATIO   = 0.35;   // max gap / perimeter to count as closed
-var TRI_CORNER_THRESH   = 0.40;   // min |turning angle| at a corner (rad ~23°)
-var TRI_PEAK_MERGE_FRAC = 0.12;   // merge peaks within this fraction of n
-var TRI_MIN_SIDE_FRAC   = 0.12;   // min gap between corners as fraction of n
-var TRI_COOLDOWN        = 2000;   // ms between triangle emits
-var TRI_CHECK_INTERVAL  = 150;    // ms between checks
-
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
   attribute float aT;   // 0 = tip, 1 = tail
@@ -107,12 +96,6 @@ AFRAME.registerComponent('hand-gestures', {
     // ── Circle detection state (ribbon-based) ──
     this._circleLastEmit  = 0;
     this._circleLastCheck = 0;
-
-    // ── Triangle detection state ──
-    this._triLastEmit  = 0;
-    this._triLastCheck = 0;
-    this._tri_u2d      = new Float32Array(TRAIL_HISTORY);
-    this._tri_v2d      = new Float32Array(TRAIL_HISTORY);
 
     if (this.data.debug) this._createInstancedMesh();
     if (this.data.trail) this._createRibbon();
@@ -354,8 +337,6 @@ AFRAME.registerComponent('hand-gestures', {
     }
 
     // ── Gesture detection (ribbon-based) ──
-    // Triangle first: if detected it flushes trail, preventing false circle
-    this._checkTriangle(t);
     this._checkCircle(t);
   },
 
@@ -482,137 +463,6 @@ AFRAME.registerComponent('hand-gestures', {
     this.el.emit('circle-shape', { radius: meanR, coverage: totalAngle });
     var self = this;
     setTimeout(function () { self.el.emit('circle-shape-end', {}); }, 1000);
-  },
-
-  // ── Triangle detection from trail control points ───────────────────────
-  _checkTriangle: function (t) {
-    // Throttle
-    if (t - this._triLastCheck < TRI_CHECK_INTERVAL) return;
-    this._triLastCheck = t;
-
-    // Cooldown
-    if (t - this._triLastEmit < TRI_COOLDOWN) return;
-
-    var n = this._histCount;
-    if (n < TRI_MIN_POINTS) return;
-
-    var pts = this._curveVecs;
-
-    // 1) Centroid
-    var cx = 0, cy = 0, cz = 0;
-    for (var i = 0; i < n; i++) { cx += pts[i].x; cy += pts[i].y; cz += pts[i].z; }
-    cx /= n; cy /= n; cz /= n;
-
-    // 2) Mean radius (size check)
-    var sumR = 0;
-    for (var i = 0; i < n; i++) {
-      var dx = pts[i].x - cx, dy = pts[i].y - cy, dz = pts[i].z - cz;
-      sumR += Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-    var meanR = sumR / n;
-    if (meanR < TRI_SIZE_MIN || meanR > TRI_SIZE_MAX) return;
-
-    // 3) Best-fit plane (reuse circle approach)
-    var midIdx = Math.floor(n / 2);
-    var v1x = pts[0].x - cx, v1y = pts[0].y - cy, v1z = pts[0].z - cz;
-    var v2x = pts[midIdx].x - cx, v2y = pts[midIdx].y - cy, v2z = pts[midIdx].z - cz;
-    var nx = v1y * v2z - v1z * v2y;
-    var ny = v1z * v2x - v1x * v2z;
-    var nz = v1x * v2y - v1y * v2x;
-    var nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    if (nLen < 1e-6) return;
-    nx /= nLen; ny /= nLen; nz /= nLen;
-
-    var u1Len = Math.sqrt(v1x * v1x + v1y * v1y + v1z * v1z);
-    if (u1Len < 1e-6) return;
-    var ux = v1x / u1Len, uy = v1y / u1Len, uz = v1z / u1Len;
-    var vx = ny * uz - nz * uy;
-    var vy = nz * ux - nx * uz;
-    var vz = nx * uy - ny * ux;
-
-    // Project points to 2D
-    var u2d = this._tri_u2d, v2d = this._tri_v2d;
-    for (var i = 0; i < n; i++) {
-      var px = pts[i].x - cx, py = pts[i].y - cy, pz = pts[i].z - cz;
-      u2d[i] = px * ux + py * uy + pz * uz;
-      v2d[i] = px * vx + py * vy + pz * vz;
-    }
-
-    // 4) Perimeter and closure check
-    var perimeter = 0;
-    for (var i = 1; i < n; i++) {
-      var du = u2d[i] - u2d[i - 1], dv = v2d[i] - v2d[i - 1];
-      perimeter += Math.sqrt(du * du + dv * dv);
-    }
-    if (perimeter < 1e-6) return;
-    var closureDist = Math.sqrt(
-      (u2d[0] - u2d[n - 1]) * (u2d[0] - u2d[n - 1]) +
-      (v2d[0] - v2d[n - 1]) * (v2d[0] - v2d[n - 1])
-    );
-    if (closureDist / perimeter > TRI_CLOSURE_RATIO) return;
-
-    // 5) Compute windowed turning angles along the path
-    var W = Math.max(2, Math.floor(n / 12));
-    var turnSigned = [];
-    var turnAbs    = [];
-    var turnIdx    = [];
-
-    for (var i = W; i < n - W; i++) {
-      var inU  = u2d[i] - u2d[i - W], inV  = v2d[i] - v2d[i - W];
-      var outU = u2d[i + W] - u2d[i], outV = v2d[i + W] - v2d[i];
-      var inA  = Math.atan2(inV, inU);
-      var outA = Math.atan2(outV, outU);
-      var turn = outA - inA;
-      if (turn > Math.PI)  turn -= 2 * Math.PI;
-      if (turn < -Math.PI) turn += 2 * Math.PI;
-      turnSigned.push(turn);
-      turnAbs.push(Math.abs(turn));
-      turnIdx.push(i);
-    }
-
-    if (turnSigned.length < 5) return;
-
-    // 6) Find local maxima of |turning angle| above threshold
-    var peaks = [];
-    for (var i = 1; i < turnAbs.length - 1; i++) {
-      if (turnAbs[i] >= TRI_CORNER_THRESH &&
-          turnAbs[i] >= turnAbs[i - 1] &&
-          turnAbs[i] >= turnAbs[i + 1]) {
-        peaks.push({ idx: turnIdx[i], angle: turnSigned[i], absAngle: turnAbs[i] });
-      }
-    }
-
-    // 7) Merge nearby peaks (keep the strongest within merge window)
-    var mergeW  = Math.max(3, Math.floor(n * TRI_PEAK_MERGE_FRAC));
-    var merged  = [];
-    for (var i = 0; i < peaks.length; i++) {
-      if (merged.length === 0 || peaks[i].idx - merged[merged.length - 1].idx > mergeW) {
-        merged.push(peaks[i]);
-      } else if (peaks[i].absAngle > merged[merged.length - 1].absAngle) {
-        merged[merged.length - 1] = peaks[i];
-      }
-    }
-
-    // 8) Exactly 3 corners
-    if (merged.length !== 3) return;
-
-    // 9) Direction consistency: all 3 corners must turn the same way
-    var s0 = merged[0].angle > 0 ? 1 : -1;
-    var s1 = merged[1].angle > 0 ? 1 : -1;
-    var s2 = merged[2].angle > 0 ? 1 : -1;
-    if (!(s0 === s1 && s1 === s2)) return;
-
-    // 10) Corners must be spread out along the path
-    var minGap = Math.floor(n * TRI_MIN_SIDE_FRAC);
-    var i0 = merged[0].idx, i1 = merged[1].idx, i2 = merged[2].idx;
-    if (i1 - i0 < minGap || i2 - i1 < minGap) return;
-
-    // ── Triangle detected! ──
-    this._triLastEmit = t;
-    this._histCount = 0;
-    this.el.emit('triangle-shape', { radius: meanR, corners: 3 });
-    var self = this;
-    setTimeout(function () { self.el.emit('triangle-shape-end', {}); }, 1000);
   },
 
 });
