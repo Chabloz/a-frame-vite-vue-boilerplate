@@ -1,10 +1,43 @@
 /**
- * $1 Unistroke Recognizer — ES module wrapper for VR use
- * Original: Wobbrock, Wilson & Li (UIST 2007) — BSD License
- * https://depts.washington.edu/acelab/proj/dollar/index.html
+ * $1 Unistroke Recognizer — adapted as ES module for WebXR / A-Frame
  *
- * Templates kept: circle, triangle, rectangle, star, check, x, arrow
- * Use addGesture(name, points2d) to register custom shapes.
+ * Original authors:
+ *   Jacob O. Wobbrock, University of Washington
+ *   Andrew D. Wilson, Microsoft Research
+ *   Yang Li, University of Washington
+ *
+ * Original publication:
+ *   Wobbrock, J.O., Wilson, A.D. and Li, Y. (2007). Gestures without libraries,
+ *   toolkits or training: A $1 recognizer for user interface prototypes.
+ *   UIST '07, pp. 159-168. https://dl.acm.org/citation.cfm?id=1294238
+ *
+ * Original source: https://depts.washington.edu/acelab/proj/dollar/dollar.js
+ * Copyright (C) 2007-2018, Jacob O. Wobbrock, Andrew D. Wilson and Yang Li.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *  - Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *  - Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *  - Neither the names of the University of Washington nor Microsoft, nor the
+ *    names of its contributors may be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+ *
+ * ── Modifications from the original (BSD 3-clause permits these) ────────────
+ *  - Converted to ES module (export DollarRecognizer, DollarPoint)
+ *  - Renamed identifiers to camelCase / underscore-prefixed private helpers
+ *  - Removed Result/Rectangle classes; recognize() returns plain {name, score}
+ *  - Protractor-only (Golden Section Search variant removed)
+ *  - circle templates replaced with mathematically generated points (CW + CCW)
+ *  - rectangle templates replaced with mathematically generated points (CW + CCW)
+ *  - Reduced built-in template set to: circle, rectangle, triangle, star,
+ *    check, x, arrow  (caret, zig-zag, brackets, v, delete, curly braces,
+ *    pigtail removed as unused in this project)
  */
 
 export function DollarPoint(x, y) { this.X = x; this.Y = y; }
@@ -119,15 +152,73 @@ function _pathDist(a, b) { var d=0; for(var i=0;i<a.length;i++) d+=_dist(a[i],b[
 function _pathLength(pts) { var d=0; for(var i=1;i<pts.length;i++) d+=_dist(pts[i-1],pts[i]); return d; }
 function _dist(a, b) { var dx=b.X-a.X,dy=b.Y-a.Y; return Math.sqrt(dx*dx+dy*dy); }
 
-// ── Built-in templates (circle, triangle, rectangle, star, check, x, arrow) ─
+// ── Template generators ──────────────────────────────────────────────────────
+// Generate N evenly-spaced points around a circle (cx,cy) radius r.
+// dir > 0 → CCW in screen coords (Y down), dir < 0 → CW.
+function _makeCirclePts(cx, cy, r, n, dir) {
+  var pts = [];
+  for (var i = 0; i < n; i++) {
+    var a = dir * 2 * Math.PI * i / n;
+    pts.push(new DollarPoint(cx + r * Math.cos(a), cy + r * Math.sin(a)));
+  }
+  return pts;
+}
+
+// Generate N points around a rectangle perimeter.
+// dir =  1 → down→right→up→left (same direction as the official hand-drawn template)
+// dir = -1 → up→right→down→left
+function _makeRectPts(x, y, w, h, n, dir) {
+  var pts = [];
+  var perim = 2 * (w + h);
+  for (var i = 0; i < n; i++) {
+    var d = perim * i / n;
+    var px, py;
+    if (dir > 0) {
+      // down → right → up → left  (start: top-left corner)
+      if      (d < h)         { px = x;         py = y + d; }
+      else if (d < h + w)     { px = x + (d-h); py = y + h; }
+      else if (d < 2*h + w)   { px = x + w;     py = y + h - (d-h-w); }
+      else                    { px = x + w - (d-2*h-w); py = y; }
+    } else {
+      // up → right → down → left  (start: bottom-left corner)
+      d = perim * i / n;
+      if      (d < h)         { px = x;         py = y + h - d; }
+      else if (d < h + w)     { px = x + (d-h); py = y; }
+      else if (d < 2*h + w)   { px = x + w;     py = y + (d-h-w); }
+      else                    { px = x + w - (d-2*h-w); py = y + h; }
+    }
+    pts.push(new DollarPoint(px, py));
+  }
+  return pts;
+}
+
+// ── Built-in templates ───────────────────────────────────────────────────────
+// Circle: two mathematically precise templates covering both draw directions.
+// Rectangle: two templates covering both winding orders.
+// Triangle, star, check, x, arrow: original official hand-drawn data (unchanged).
 /* eslint-disable */
 var _TEMPLATES = [
-  ['circle',    [new DollarPoint(127,141),new DollarPoint(124,140),new DollarPoint(120,139),new DollarPoint(118,139),new DollarPoint(116,139),new DollarPoint(111,140),new DollarPoint(109,141),new DollarPoint(104,144),new DollarPoint(100,147),new DollarPoint(96,152),new DollarPoint(93,157),new DollarPoint(90,163),new DollarPoint(87,169),new DollarPoint(85,175),new DollarPoint(83,181),new DollarPoint(82,190),new DollarPoint(82,195),new DollarPoint(83,200),new DollarPoint(84,205),new DollarPoint(88,213),new DollarPoint(91,216),new DollarPoint(96,219),new DollarPoint(103,222),new DollarPoint(108,224),new DollarPoint(111,224),new DollarPoint(120,224),new DollarPoint(133,223),new DollarPoint(142,222),new DollarPoint(152,218),new DollarPoint(160,214),new DollarPoint(167,210),new DollarPoint(173,204),new DollarPoint(178,198),new DollarPoint(179,196),new DollarPoint(182,188),new DollarPoint(182,177),new DollarPoint(178,167),new DollarPoint(170,150),new DollarPoint(163,138),new DollarPoint(152,130),new DollarPoint(143,129),new DollarPoint(140,131),new DollarPoint(129,136),new DollarPoint(126,139)]],
+  // ── Circles (CW and CCW in screen/canvas coords) ──────────────────────────
+  ['circle', _makeCirclePts(125, 125, 100, 64,  1)],  // CCW
+  ['circle', _makeCirclePts(125, 125, 100, 64, -1)],  // CW
+
+  // ── Rectangles (both winding orders) ─────────────────────────────────────
+  ['rectangle', _makeRectPts(50, 50, 150, 150, 64,  1)],  // down→right→up→left
+  ['rectangle', _makeRectPts(50, 50, 150, 150, 64, -1)],  // up→right→down→left
+
+  // ── Triangle (official data) ──────────────────────────────────────────────
   ['triangle',  [new DollarPoint(137,139),new DollarPoint(135,141),new DollarPoint(133,144),new DollarPoint(132,146),new DollarPoint(130,149),new DollarPoint(128,151),new DollarPoint(126,155),new DollarPoint(123,160),new DollarPoint(120,166),new DollarPoint(116,171),new DollarPoint(112,177),new DollarPoint(107,183),new DollarPoint(102,188),new DollarPoint(100,191),new DollarPoint(95,195),new DollarPoint(90,199),new DollarPoint(86,203),new DollarPoint(82,206),new DollarPoint(80,209),new DollarPoint(75,213),new DollarPoint(73,213),new DollarPoint(70,216),new DollarPoint(67,219),new DollarPoint(64,221),new DollarPoint(61,223),new DollarPoint(60,225),new DollarPoint(62,226),new DollarPoint(65,225),new DollarPoint(67,226),new DollarPoint(74,226),new DollarPoint(77,227),new DollarPoint(85,229),new DollarPoint(91,230),new DollarPoint(99,231),new DollarPoint(108,232),new DollarPoint(116,233),new DollarPoint(125,233),new DollarPoint(134,234),new DollarPoint(145,233),new DollarPoint(153,232),new DollarPoint(160,233),new DollarPoint(170,234),new DollarPoint(177,235),new DollarPoint(179,236),new DollarPoint(186,237),new DollarPoint(193,238),new DollarPoint(198,239),new DollarPoint(200,237),new DollarPoint(202,239),new DollarPoint(204,238),new DollarPoint(206,234),new DollarPoint(205,230),new DollarPoint(202,222),new DollarPoint(197,216),new DollarPoint(192,207),new DollarPoint(186,198),new DollarPoint(179,189),new DollarPoint(174,183),new DollarPoint(170,178),new DollarPoint(164,171),new DollarPoint(161,168),new DollarPoint(154,160),new DollarPoint(148,155),new DollarPoint(143,150),new DollarPoint(138,148),new DollarPoint(136,148)]],
-  ['rectangle', [new DollarPoint(78,149),new DollarPoint(78,153),new DollarPoint(78,157),new DollarPoint(78,160),new DollarPoint(79,162),new DollarPoint(79,164),new DollarPoint(79,167),new DollarPoint(79,169),new DollarPoint(79,173),new DollarPoint(79,178),new DollarPoint(79,183),new DollarPoint(80,189),new DollarPoint(80,193),new DollarPoint(80,198),new DollarPoint(80,202),new DollarPoint(81,208),new DollarPoint(81,210),new DollarPoint(81,216),new DollarPoint(82,222),new DollarPoint(82,224),new DollarPoint(82,227),new DollarPoint(83,229),new DollarPoint(83,231),new DollarPoint(85,230),new DollarPoint(88,232),new DollarPoint(90,233),new DollarPoint(92,232),new DollarPoint(94,233),new DollarPoint(99,232),new DollarPoint(102,233),new DollarPoint(106,233),new DollarPoint(109,234),new DollarPoint(117,235),new DollarPoint(123,236),new DollarPoint(126,236),new DollarPoint(135,237),new DollarPoint(142,238),new DollarPoint(145,238),new DollarPoint(152,238),new DollarPoint(154,239),new DollarPoint(165,238),new DollarPoint(174,237),new DollarPoint(179,236),new DollarPoint(186,235),new DollarPoint(191,235),new DollarPoint(195,233),new DollarPoint(197,233),new DollarPoint(200,233),new DollarPoint(201,235),new DollarPoint(201,233),new DollarPoint(199,231),new DollarPoint(198,226),new DollarPoint(198,220),new DollarPoint(196,207),new DollarPoint(195,195),new DollarPoint(195,181),new DollarPoint(195,173),new DollarPoint(195,163),new DollarPoint(194,155),new DollarPoint(192,145),new DollarPoint(192,143),new DollarPoint(192,138),new DollarPoint(191,135),new DollarPoint(191,133),new DollarPoint(191,130),new DollarPoint(190,128),new DollarPoint(188,129),new DollarPoint(186,129),new DollarPoint(181,132),new DollarPoint(173,131),new DollarPoint(162,131),new DollarPoint(151,132),new DollarPoint(149,132),new DollarPoint(138,132),new DollarPoint(136,132),new DollarPoint(122,131),new DollarPoint(120,131),new DollarPoint(109,130),new DollarPoint(107,130),new DollarPoint(90,132),new DollarPoint(81,133),new DollarPoint(76,133)]],
+
+  // ── Star (official data) ──────────────────────────────────────────────────
   ['star',      [new DollarPoint(75,250),new DollarPoint(75,247),new DollarPoint(77,244),new DollarPoint(78,242),new DollarPoint(79,239),new DollarPoint(80,237),new DollarPoint(82,234),new DollarPoint(82,232),new DollarPoint(84,229),new DollarPoint(85,225),new DollarPoint(87,222),new DollarPoint(88,219),new DollarPoint(89,216),new DollarPoint(91,212),new DollarPoint(92,208),new DollarPoint(94,204),new DollarPoint(95,201),new DollarPoint(96,196),new DollarPoint(97,194),new DollarPoint(98,191),new DollarPoint(100,185),new DollarPoint(102,178),new DollarPoint(104,173),new DollarPoint(104,171),new DollarPoint(105,164),new DollarPoint(106,158),new DollarPoint(107,156),new DollarPoint(107,152),new DollarPoint(108,145),new DollarPoint(109,141),new DollarPoint(110,139),new DollarPoint(112,133),new DollarPoint(113,131),new DollarPoint(116,127),new DollarPoint(117,125),new DollarPoint(119,122),new DollarPoint(121,121),new DollarPoint(123,120),new DollarPoint(125,122),new DollarPoint(125,125),new DollarPoint(127,130),new DollarPoint(128,133),new DollarPoint(131,143),new DollarPoint(136,153),new DollarPoint(140,163),new DollarPoint(144,172),new DollarPoint(145,175),new DollarPoint(151,189),new DollarPoint(156,201),new DollarPoint(161,213),new DollarPoint(166,225),new DollarPoint(169,233),new DollarPoint(171,236),new DollarPoint(174,243),new DollarPoint(177,247),new DollarPoint(178,249),new DollarPoint(179,251),new DollarPoint(180,253),new DollarPoint(180,255),new DollarPoint(179,257),new DollarPoint(177,257),new DollarPoint(174,255),new DollarPoint(169,250),new DollarPoint(164,247),new DollarPoint(160,245),new DollarPoint(149,238),new DollarPoint(138,230),new DollarPoint(127,221),new DollarPoint(124,220),new DollarPoint(112,212),new DollarPoint(110,210),new DollarPoint(96,201),new DollarPoint(84,195),new DollarPoint(74,190),new DollarPoint(64,182),new DollarPoint(55,175),new DollarPoint(51,172),new DollarPoint(49,170),new DollarPoint(51,169),new DollarPoint(56,169),new DollarPoint(66,169),new DollarPoint(78,168),new DollarPoint(92,166),new DollarPoint(107,164),new DollarPoint(123,161),new DollarPoint(140,162),new DollarPoint(156,162),new DollarPoint(171,160),new DollarPoint(173,160),new DollarPoint(186,160),new DollarPoint(195,160),new DollarPoint(198,161),new DollarPoint(203,163),new DollarPoint(208,163),new DollarPoint(206,164),new DollarPoint(200,167),new DollarPoint(187,172),new DollarPoint(174,179),new DollarPoint(172,181),new DollarPoint(153,192),new DollarPoint(137,201),new DollarPoint(123,211),new DollarPoint(112,220),new DollarPoint(99,229),new DollarPoint(90,237),new DollarPoint(80,244),new DollarPoint(73,250),new DollarPoint(69,254),new DollarPoint(69,252)]],
+
+  // ── Check (official data) ─────────────────────────────────────────────────
   ['check',     [new DollarPoint(91,185),new DollarPoint(93,185),new DollarPoint(95,185),new DollarPoint(97,185),new DollarPoint(100,188),new DollarPoint(102,189),new DollarPoint(104,190),new DollarPoint(106,193),new DollarPoint(108,195),new DollarPoint(110,198),new DollarPoint(112,201),new DollarPoint(114,204),new DollarPoint(115,207),new DollarPoint(117,210),new DollarPoint(118,212),new DollarPoint(120,214),new DollarPoint(121,217),new DollarPoint(122,219),new DollarPoint(123,222),new DollarPoint(124,224),new DollarPoint(126,226),new DollarPoint(127,229),new DollarPoint(129,231),new DollarPoint(130,233),new DollarPoint(129,231),new DollarPoint(129,228),new DollarPoint(129,226),new DollarPoint(129,224),new DollarPoint(129,221),new DollarPoint(129,218),new DollarPoint(129,212),new DollarPoint(129,208),new DollarPoint(130,198),new DollarPoint(132,189),new DollarPoint(134,182),new DollarPoint(137,173),new DollarPoint(143,164),new DollarPoint(147,157),new DollarPoint(151,151),new DollarPoint(155,144),new DollarPoint(161,137),new DollarPoint(165,131),new DollarPoint(171,122),new DollarPoint(174,118),new DollarPoint(176,114),new DollarPoint(177,112),new DollarPoint(177,114),new DollarPoint(175,116),new DollarPoint(173,118)]],
+
+  // ── X (official data) ─────────────────────────────────────────────────────
   ['x',         [new DollarPoint(87,142),new DollarPoint(89,145),new DollarPoint(91,148),new DollarPoint(93,151),new DollarPoint(96,155),new DollarPoint(98,157),new DollarPoint(100,160),new DollarPoint(102,162),new DollarPoint(106,167),new DollarPoint(108,169),new DollarPoint(110,171),new DollarPoint(115,177),new DollarPoint(119,183),new DollarPoint(123,189),new DollarPoint(127,193),new DollarPoint(129,196),new DollarPoint(133,200),new DollarPoint(137,206),new DollarPoint(140,209),new DollarPoint(143,212),new DollarPoint(146,215),new DollarPoint(151,220),new DollarPoint(153,222),new DollarPoint(155,223),new DollarPoint(157,225),new DollarPoint(158,223),new DollarPoint(157,218),new DollarPoint(155,211),new DollarPoint(154,208),new DollarPoint(152,200),new DollarPoint(150,189),new DollarPoint(148,179),new DollarPoint(147,170),new DollarPoint(147,158),new DollarPoint(147,148),new DollarPoint(147,141),new DollarPoint(147,136),new DollarPoint(144,135),new DollarPoint(142,137),new DollarPoint(140,139),new DollarPoint(135,145),new DollarPoint(131,152),new DollarPoint(124,163),new DollarPoint(116,177),new DollarPoint(108,191),new DollarPoint(100,206),new DollarPoint(94,217),new DollarPoint(91,222),new DollarPoint(89,225),new DollarPoint(87,226),new DollarPoint(87,224)]],
+
+  // ── Arrow (official data) ─────────────────────────────────────────────────
   ['arrow',     [new DollarPoint(68,222),new DollarPoint(70,220),new DollarPoint(73,218),new DollarPoint(75,217),new DollarPoint(77,215),new DollarPoint(80,213),new DollarPoint(82,212),new DollarPoint(84,210),new DollarPoint(87,209),new DollarPoint(89,208),new DollarPoint(92,206),new DollarPoint(95,204),new DollarPoint(101,201),new DollarPoint(106,198),new DollarPoint(112,194),new DollarPoint(118,191),new DollarPoint(124,187),new DollarPoint(127,186),new DollarPoint(132,183),new DollarPoint(138,181),new DollarPoint(141,180),new DollarPoint(146,178),new DollarPoint(154,173),new DollarPoint(159,171),new DollarPoint(161,170),new DollarPoint(166,167),new DollarPoint(168,167),new DollarPoint(171,166),new DollarPoint(174,164),new DollarPoint(177,162),new DollarPoint(180,160),new DollarPoint(182,158),new DollarPoint(183,156),new DollarPoint(181,154),new DollarPoint(178,153),new DollarPoint(171,153),new DollarPoint(164,153),new DollarPoint(160,153),new DollarPoint(150,154),new DollarPoint(147,155),new DollarPoint(141,157),new DollarPoint(137,158),new DollarPoint(135,158),new DollarPoint(137,158),new DollarPoint(140,157),new DollarPoint(143,156),new DollarPoint(151,154),new DollarPoint(160,152),new DollarPoint(170,149),new DollarPoint(179,147),new DollarPoint(185,145),new DollarPoint(192,144),new DollarPoint(196,144),new DollarPoint(198,144),new DollarPoint(200,144),new DollarPoint(201,147),new DollarPoint(199,149),new DollarPoint(194,157),new DollarPoint(191,160),new DollarPoint(186,167),new DollarPoint(180,176),new DollarPoint(177,179),new DollarPoint(171,187),new DollarPoint(169,189),new DollarPoint(165,194),new DollarPoint(164,196)]],
 ];
 /* eslint-enable */

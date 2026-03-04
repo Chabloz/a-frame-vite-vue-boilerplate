@@ -105,7 +105,14 @@ AFRAME.registerComponent('hand-gestures', {
     this._gestureLastEmit = 0;
     this._recognizer      = new DollarRecognizer();
 
+    // ── 2D debug canvas state ──
+    this._debugCanvas  = null;
+    this._debugCtx     = null;
+    this._debugTexture = null;
+    this._debugPlane   = null;
+
     if (this.data.debug) this._createInstancedMesh();
+    if (this.data.debug) this._createDebugCanvas();
     if (this.data.trail) this._createRibbon();
   },
 
@@ -126,6 +133,7 @@ AFRAME.registerComponent('hand-gestures', {
 
     if (this.data.debug !== prevData.debug) {
       this.data.debug ? this._createInstancedMesh() : this._destroyInstancedMesh();
+      this.data.debug ? this._createDebugCanvas()   : this._destroyDebugCanvas();
     }
     if (this.data.trail !== prevData.trail) {
       this.data.trail ? this._createRibbon() : this._destroyRibbon();
@@ -341,6 +349,9 @@ AFRAME.registerComponent('hand-gestures', {
       }
       // Collect 2D projected point for $1 recognizer
       this._strokePoints.push(this._projectToCameraPlane(this._tipPosition));
+      if (this.data.debug && this._strokePoints.length >= 2) {
+        this._updateDebugCanvas(this._strokePoints, null);
+      }
     }
 
     // ── Pinch released → run $1 recognition ──
@@ -367,6 +378,7 @@ AFRAME.registerComponent('hand-gestures', {
   remove: function () {
     this._destroyInstancedMesh();
     this._destroyRibbon();
+    this._destroyDebugCanvas();
   },
 
   // ── $1 gesture recognition ────────────────────────────────────────────
@@ -379,6 +391,9 @@ AFRAME.registerComponent('hand-gestures', {
     if (t - this._gestureLastEmit < GESTURE_COOLDOWN) return;
 
     var result = this._recognizer.recognize(pts);
+    if (this.data.debug) {
+      this._updateDebugCanvas(pts, result.name + ' (' + result.score.toFixed(2) + ')');
+    }
     if (result.score < GESTURE_SCORE_MIN) return;
 
     this._gestureLastEmit = t;
@@ -387,6 +402,129 @@ AFRAME.registerComponent('hand-gestures', {
     this.el.emit(evtName, { name: result.name, score: result.score });
     var self = this;
     setTimeout(function () { self.el.emit(evtName + '-end', {}); }, 1000);
+  },
+
+  // ── 2D debug canvas plane ──────────────────────────────────────────────────
+  _createDebugCanvas: function () {
+    if (this._debugPlane) return;
+    var SIZE = 512;
+    var canvas = document.createElement('canvas');
+    canvas.width  = SIZE;
+    canvas.height = SIZE;
+    this._debugCanvas = canvas;
+    this._debugCtx    = canvas.getContext('2d');
+    this._clearDebugCanvas();
+
+    var plane = document.createElement('a-plane');
+    plane.setAttribute('position', '0.3 1.4 -0.45');
+    plane.setAttribute('width',  '0.28');
+    plane.setAttribute('height', '0.28');
+    plane.setAttribute('material', 'color: #111111; shader: flat; side: double');
+    this._debugPlane = plane;
+    this.el.sceneEl.appendChild(plane);
+
+    var self = this;
+    var applyTex = function () {
+      var mesh = plane.getObject3D('mesh');
+      if (!mesh) return;
+      self._debugTexture = new THREE.CanvasTexture(canvas);
+      mesh.material.map = self._debugTexture;
+      mesh.material.needsUpdate = true;
+    };
+    if (plane.hasLoaded) { applyTex(); }
+    else { plane.addEventListener('loaded', applyTex); }
+  },
+
+  _destroyDebugCanvas: function () {
+    if (this._debugPlane && this._debugPlane.parentNode) {
+      this._debugPlane.parentNode.removeChild(this._debugPlane);
+    }
+    this._debugPlane   = null;
+    this._debugCanvas  = null;
+    this._debugCtx     = null;
+    this._debugTexture = null;
+  },
+
+  _clearDebugCanvas: function () {
+    if (!this._debugCtx) return;
+    var ctx = this._debugCtx;
+    var W = this._debugCanvas.width;
+    var H = this._debugCanvas.height;
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#2a2a2a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H);
+    ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2);
+    ctx.stroke();
+    if (this._debugTexture) this._debugTexture.needsUpdate = true;
+  },
+
+  _updateDebugCanvas: function (pts, label) {
+    if (!this._debugCtx || !pts || pts.length < 2) return;
+    var ctx = this._debugCtx;
+    var W   = this._debugCanvas.width;
+    var H   = this._debugCanvas.height;
+    var PAD = 48;
+
+    // Compute bounds with uniform scale to preserve aspect ratio
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (var i = 0; i < pts.length; i++) {
+      if (pts[i].X < minX) minX = pts[i].X; if (pts[i].X > maxX) maxX = pts[i].X;
+      if (pts[i].Y < minY) minY = pts[i].Y; if (pts[i].Y > maxY) maxY = pts[i].Y;
+    }
+    var cx    = (minX + maxX) / 2;
+    var cy    = (minY + maxY) / 2;
+    var range = Math.max(maxX - minX, maxY - minY) || 1;
+    var scale = (W - 2 * PAD) / range;
+
+    var toSX = function (x) { return W / 2 + (x - cx) * scale; };
+    var toSY = function (y) { return H / 2 - (y - cy) * scale; }; // flip Y axis
+
+    // Background + crosshairs
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#2a2a2a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H);
+    ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2);
+    ctx.stroke();
+
+    // Stroke path
+    ctx.strokeStyle = label ? '#ffaa00' : '#00ff88';
+    ctx.lineWidth   = 3;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(toSX(pts[0].X), toSY(pts[0].Y));
+    for (var j = 1; j < pts.length; j++) {
+      ctx.lineTo(toSX(pts[j].X), toSY(pts[j].Y));
+    }
+    ctx.stroke();
+
+    // Start dot (red)
+    ctx.fillStyle = '#ff4444';
+    ctx.beginPath();
+    ctx.arc(toSX(pts[0].X), toSY(pts[0].Y), 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // End dot (cyan)
+    ctx.fillStyle = '#00ccff';
+    ctx.beginPath();
+    ctx.arc(toSX(pts[pts.length - 1].X), toSY(pts[pts.length - 1].Y), 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Label
+    if (label) {
+      ctx.font      = 'bold 38px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffdd00';
+      ctx.fillText(label, W / 2, H - 14);
+    }
+
+    if (this._debugTexture) this._debugTexture.needsUpdate = true;
   },
 
   // Project a 3D world position onto the camera's right/up plane → DollarPoint

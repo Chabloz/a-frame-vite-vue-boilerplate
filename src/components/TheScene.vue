@@ -47,7 +47,7 @@
         id="gesture-debug"
         position="0 2 -1.5"
         gesture-debug
-        text="value: —; color: yellow; align: center; width: 3"
+        text="value: ...; color: yellow; align: center; anchor: center; width: 3"
       ></a-entity>
     </template>
 
