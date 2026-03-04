@@ -18,7 +18,7 @@ var PINCH_RELEASE     = 0.040; // m — pinch ends above this threshold (hystere
 
 // $1 gesture recognition
 var GESTURE_MIN_POINTS = 8;    // min stroke points to attempt recognition
-var GESTURE_SCORE_MIN  = 0.65; // min $1 score to accept a result
+var GESTURE_SCORE_MIN  = 0.51; // min $1 score to accept a result
 var GESTURE_COOLDOWN   = 1500; // ms between gesture emits
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
@@ -416,9 +416,9 @@ AFRAME.registerComponent('hand-gestures', {
     this._clearDebugCanvas();
 
     var plane = document.createElement('a-plane');
-    plane.setAttribute('position', '0.3 1.4 -0.45');
-    plane.setAttribute('width',  '0.28');
-    plane.setAttribute('height', '0.28');
+    plane.setAttribute('position', '0.5 1.5 -1.2');
+    plane.setAttribute('width',  '0.5');
+    plane.setAttribute('height', '0.5');
     plane.setAttribute('material', 'color: #111111; shader: flat; side: double');
     this._debugPlane = plane;
     this.el.sceneEl.appendChild(plane);
