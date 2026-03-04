@@ -1,26 +1,25 @@
+import { DollarRecognizer, DollarPoint } from '../../public/lib/dollar.js';
+
 // Fingertip indices per WebXR Hand Input spec
 var FINGERTIP_INDICES = [4, 9, 14, 19, 24];
 var FINGERTIP_COLORS  = [0xe74c3c, 0x2ecc71, 0x3498db, 0xf39c12, 0x9b59b6];
 
 var INDEX_TIP_BONE    = 9;     // index-finger-tip joint index
+var THUMB_TIP_BONE    = 4;     // thumb tip joint index
 var TRAIL_HISTORY     = 72;    // control points kept for the CatmullRom curve (visual only)
 var TRAIL_SAMPLES     = 72;    // ribbon segments sampled from curve
 var TRAIL_HALF_WIDTH  = 0.014; // meters at the tip (tapers to 0 at tail)
 var MIN_MOVE_DIST     = 0.003; // min displacement (m) to record a new trail point
-var SPEED_MIN         = 0.25;  // m/s — below this speed ribbon is invisible
-var SPEED_MAX         = 1.2;   // m/s — above this speed ribbon is at full length
-var SPEED_EMA         = 0.18;  // EMA smoothing factor (higher = more reactive)
+var SPEED_EMA         = 0.18;  // EMA smoothing factor for speed display
 
-// Circle gesture detection (from ribbon trail points)
-var CIRCLE_MIN_POINTS     = 12;    // minimum trail points to attempt detection
-var CIRCLE_RADIUS_MIN     = 0.03;  // min average radius (m) to count as a circle
-var CIRCLE_RADIUS_MAX     = 0.25;  // max average radius (m)
-var CIRCLE_VARIANCE_MAX   = 0.22;  // max allowed coefficient of variation (stddev/mean)
-var CIRCLE_ANGLE_COVERAGE = 4.5;   // min |net signed| angular coverage in radians (~258°)
-var CIRCLE_DIR_RATIO      = 0.75;  // at least 75% of angular deltas must agree in direction
-var CIRCLE_TURN_CV_MAX    = 0.80;  // max CV of |per-step turning angle| (rejects triangles: spiky corners)
-var CIRCLE_COOLDOWN       = 2000;  // ms between consecutive circle emits
-var CIRCLE_CHECK_INTERVAL = 150;   // ms between detection checks (perf)
+// Pinch gesture trigger
+var PINCH_DIST        = 0.025; // m — pinch begins below this threshold
+var PINCH_RELEASE     = 0.040; // m — pinch ends above this threshold (hysteresis)
+
+// $1 gesture recognition
+var GESTURE_MIN_POINTS = 8;    // min stroke points to attempt recognition
+var GESTURE_SCORE_MIN  = 0.65; // min $1 score to accept a result
+var GESTURE_COOLDOWN   = 1500; // ms between gesture emits
 
 // ── Shaders ─────────────────────────────────────────────────────────────────
 var RIBBON_VERT = /* glsl */`
@@ -88,14 +87,23 @@ AFRAME.registerComponent('hand-gestures', {
     // Track last timestamp to compute history decay
     this._lastAddTime     = 0;
 
-    // Speed tracking (EMA)
-    this._speed           = 0;     // smoothed m/s
+    // Speed / prev tip (still used for MIN_MOVE_DIST gating)
+    this._speed           = 0;
     this._prevTipPos      = new THREE.Vector3(1e9, 1e9, 1e9); // sentinel
-    this._visibleHistory  = 0;     // how many curve points are actually drawn
+    this._visibleHistory  = 0;
 
-    // ── Circle detection state (ribbon-based) ──
-    this._circleLastEmit  = 0;
-    this._circleLastCheck = 0;
+    // Thumb tip temp vector
+    this._thumbPosition = new THREE.Vector3();
+
+    // Camera axis temp vectors (for 2D projection)
+    this._camRight = new THREE.Vector3();
+    this._camUp    = new THREE.Vector3();
+
+    // ── Pinch + $1 gesture state ──
+    this._isPinching      = false;
+    this._strokePoints    = [];      // DollarPoint[] built during pinch
+    this._gestureLastEmit = 0;
+    this._recognizer      = new DollarRecognizer();
 
     if (this.data.debug) this._createInstancedMesh();
     if (this.data.trail) this._createRibbon();
@@ -294,12 +302,13 @@ AFRAME.registerComponent('hand-gestures', {
 
     // ── No hand data ──
     if (!hasPoses) {
+      this._isPinching = false; // reset pinch state
       if (this._ribbonMesh) {
-        // Decay speed to 0 so ribbon fades out
-        this._speed = this._speed * (1 - SPEED_EMA);
-        var fadedAlpha = Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN));
-        var fadedHist  = Math.round(fadedAlpha * this._histCount);
-        if (fadedHist >= 3) this._rebuildRibbon(fadedHist, fadedAlpha);
+        // Time-based fade when hand lost
+        var elapsed   = t - this._lastAddTime;
+        var fadeAlpha = Math.max(0, 1.0 - elapsed / Math.max(1, this.data.trailFade));
+        var fadedHist = Math.round(fadeAlpha * this._histCount);
+        if (fadedHist >= 3) this._rebuildRibbon(fadedHist, fadeAlpha);
         else this._ribbonMesh.visible = false;
       }
       return;
@@ -317,27 +326,42 @@ AFRAME.registerComponent('hand-gestures', {
     this._speed  = this._speed + SPEED_EMA * (rawSpeed - this._speed);
     this._prevTipPos.copy(this._tipPosition);
 
-    // ── Record trail + gesture points ──
-    if (rawDist >= MIN_MOVE_DIST) {
+    // ── Pinch detection (index tip ↔ thumb tip) ──
+    this._jointMatrix.fromArray(jointPoses, THUMB_TIP_BONE * 16);
+    this._thumbPosition.setFromMatrixPosition(this._jointMatrix);
+    var pinchDist   = this._tipPosition.distanceTo(this._thumbPosition);
+    var wasPinching = this._isPinching;
+    this._isPinching = pinchDist < (this._isPinching ? PINCH_RELEASE : PINCH_DIST);
+
+    // ── Record trail only while pinching ──
+    if (this._isPinching && rawDist >= MIN_MOVE_DIST) {
       if (this._ribbonMesh) {
         this._pushHistoryPoint(this._tipPosition);
         this._lastAddTime = t;
       }
+      // Collect 2D projected point for $1 recognizer
+      this._strokePoints.push(this._projectToCameraPlane(this._tipPosition));
+    }
+
+    // ── Pinch released → run $1 recognition ──
+    if (wasPinching && !this._isPinching) {
+      this._recognizeStroke(t);
     }
 
     // ── Ribbon visual ──
     if (this._ribbonMesh) {
-      var speedT = Math.min(1, Math.max(0, (this._speed - SPEED_MIN) / (SPEED_MAX - SPEED_MIN)));
-      this._visibleHistory = Math.round(speedT * this._histCount);
-      if (this._visibleHistory >= 3) {
-        this._rebuildRibbon(this._visibleHistory, speedT);
+      if (this._isPinching && this._histCount >= 3) {
+        // Full-bright ribbon while pinching
+        this._rebuildRibbon(this._histCount, 1.0);
       } else {
-        this._ribbonMesh.visible = false;
+        // Time-based fade after pinch release
+        var elapsed   = t - this._lastAddTime;
+        var fadeAlpha = Math.max(0, 1.0 - elapsed / Math.max(1, this.data.trailFade));
+        var fadedHist = Math.round(fadeAlpha * this._histCount);
+        if (fadedHist >= 3) this._rebuildRibbon(fadedHist, fadeAlpha);
+        else this._ribbonMesh.visible = false;
       }
     }
-
-    // ── Gesture detection (ribbon-based) ──
-    this._checkCircle(t);
   },
 
   remove: function () {
@@ -345,124 +369,38 @@ AFRAME.registerComponent('hand-gestures', {
     this._destroyRibbon();
   },
 
-  // ── Circle detection from trail control points ─────────────────────────
-  _checkCircle: function (t) {
-    // Throttle: don't run every frame
-    if (t - this._circleLastCheck < CIRCLE_CHECK_INTERVAL) return;
-    this._circleLastCheck = t;
+  // ── $1 gesture recognition ────────────────────────────────────────────
+  _recognizeStroke: function (t) {
+    var pts = this._strokePoints;
+    this._strokePoints = []; // reset for next stroke
+    this._histCount    = 0;  // clear ribbon trail
 
-    // Cooldown between emits
-    if (t - this._circleLastEmit < CIRCLE_COOLDOWN) return;
+    if (pts.length < GESTURE_MIN_POINTS) return;
+    if (t - this._gestureLastEmit < GESTURE_COOLDOWN) return;
 
-    var n = this._histCount;
-    if (n < CIRCLE_MIN_POINTS) return;
+    var result = this._recognizer.recognize(pts);
+    if (result.score < GESTURE_SCORE_MIN) return;
 
-    var pts = this._curveVecs;
-
-    // 1) Compute centroid of the N most recent points
-    var cx = 0, cy = 0, cz = 0;
-    for (var i = 0; i < n; i++) {
-      cx += pts[i].x; cy += pts[i].y; cz += pts[i].z;
-    }
-    cx /= n; cy /= n; cz /= n;
-
-    // 2) Compute mean radius & std deviation from centroid
-    var sumR = 0, sumR2 = 0;
-    for (var i = 0; i < n; i++) {
-      var dx = pts[i].x - cx;
-      var dy = pts[i].y - cy;
-      var dz = pts[i].z - cz;
-      var r = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      sumR  += r;
-      sumR2 += r * r;
-    }
-    var meanR = sumR / n;
-    var variance = (sumR2 / n) - (meanR * meanR);
-    var stddev = Math.sqrt(Math.max(0, variance));
-    var cv = (meanR > 0.001) ? (stddev / meanR) : 999;
-
-    // Reject if radius out of range or too irregular
-    if (meanR < CIRCLE_RADIUS_MIN || meanR > CIRCLE_RADIUS_MAX) return;
-    if (cv > CIRCLE_VARIANCE_MAX) return;
-
-    // 3) Best-fit plane via PCA-lite: find the normal of the point cloud
-    //    using the covariance matrix and picking the eigenvector with
-    //    the smallest eigenvalue. For speed we use the cross-product of
-    //    two spread vectors (first and middle point from centroid).
-    var midIdx = Math.floor(n / 2);
-    var v1x = pts[0].x - cx, v1y = pts[0].y - cy, v1z = pts[0].z - cz;
-    var v2x = pts[midIdx].x - cx, v2y = pts[midIdx].y - cy, v2z = pts[midIdx].z - cz;
-    var nx = v1y * v2z - v1z * v2y;
-    var ny = v1z * v2x - v1x * v2z;
-    var nz = v1x * v2y - v1y * v2x;
-    var nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    if (nLen < 1e-6) return;
-    nx /= nLen; ny /= nLen; nz /= nLen;
-
-    // Build local 2D basis on the plane: u = normalize(v1), v = cross(n, u)
-    var u1Len = Math.sqrt(v1x * v1x + v1y * v1y + v1z * v1z);
-    if (u1Len < 1e-6) return;
-    var ux = v1x / u1Len, uy = v1y / u1Len, uz = v1z / u1Len;
-    var vx = ny * uz - nz * uy;
-    var vy = nz * ux - nx * uz;
-    var vz = nx * uy - ny * ux;
-
-    // 4) Project points onto 2D plane and compute angular coverage
-    var angles = [];
-    for (var i = 0; i < n; i++) {
-      var px = pts[i].x - cx, py = pts[i].y - cy, pz = pts[i].z - cz;
-      var projU = px * ux + py * uy + pz * uz;
-      var projV = px * vx + py * vy + pz * vz;
-      angles.push(Math.atan2(projV, projU));
-    }
-
-    // Signed angular deltas — a real circle accumulates net rotation,
-    // while back-and-forth or zigzag motions cancel out.
-    var signedAngle = 0;
-    var sameDirCount = 0;
-    var totalDeltas  = n - 1;
-    for (var i = 1; i < n; i++) {
-      var da = angles[i] - angles[i - 1];
-      // Wrap to [-PI, PI]
-      if (da > Math.PI)  da -= 2 * Math.PI;
-      if (da < -Math.PI) da += 2 * Math.PI;
-      signedAngle += da;
-    }
-
-    var totalAngle = Math.abs(signedAngle);
-    if (totalAngle < CIRCLE_ANGLE_COVERAGE) return;
-
-    // Direction consistency: count deltas agreeing with the dominant direction
-    var sign = signedAngle > 0 ? 1 : -1;
-    var sumDA = 0, sumDA2 = 0;
-    for (var i = 1; i < n; i++) {
-      var da = angles[i] - angles[i - 1];
-      if (da > Math.PI)  da -= 2 * Math.PI;
-      if (da < -Math.PI) da += 2 * Math.PI;
-      if (da * sign > 0) sameDirCount++;
-      var absDA = Math.abs(da);
-      sumDA  += absDA;
-      sumDA2 += absDA * absDA;
-    }
-    var dirRatio = sameDirCount / totalDeltas;
-    if (dirRatio < CIRCLE_DIR_RATIO) return;
-
-    // Turning-angle uniformity: in a circle the per-step |delta angle|
-    // is roughly constant. In a triangle it spikes at corners and is
-    // near-zero on sides → high CV. Reject if CV too large.
-    var meanDA   = sumDA / totalDeltas;
-    var varDA    = (sumDA2 / totalDeltas) - (meanDA * meanDA);
-    var stddevDA = Math.sqrt(Math.max(0, varDA));
-    var turnCV   = (meanDA > 1e-6) ? (stddevDA / meanDA) : 999;
-    if (turnCV > CIRCLE_TURN_CV_MAX) return;
-
-    // ── Circle detected! ──
-    this._circleLastEmit = t;
-    // Flush trail so the same gesture doesn't fire twice
-    this._histCount = 0;
-    this.el.emit('circle-shape', { radius: meanR, coverage: totalAngle });
+    this._gestureLastEmit = t;
+    var evtName = result.name + '-shape';
+    this.el.emit('gesture', { name: result.name, score: result.score });
+    this.el.emit(evtName, { name: result.name, score: result.score });
     var self = this;
-    setTimeout(function () { self.el.emit('circle-shape-end', {}); }, 1000);
+    setTimeout(function () { self.el.emit(evtName + '-end', {}); }, 1000);
   },
+
+  // Project a 3D world position onto the camera's right/up plane → DollarPoint
+  _projectToCameraPlane: function (worldPos) {
+    var cam = this.el.sceneEl.camera;
+    if (!cam) return new DollarPoint(0, 0);
+    this._camRight.set(1, 0, 0).applyQuaternion(cam.quaternion);
+    this._camUp.set(0, 1, 0).applyQuaternion(cam.quaternion);
+    var scale = 1000; // arbitrary but consistent; $1 normalises internally
+    return new DollarPoint(
+      worldPos.dot(this._camRight) * scale,
+      worldPos.dot(this._camUp)    * scale
+    );
+  },
+
 
 });
